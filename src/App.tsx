@@ -22,7 +22,9 @@ function App() {
 
   const handleRestart = () => {
     stopGame();
-    changeLevel(gameState.currentLevel);
+    setTimeout(() => {
+      changeLevel(gameState.currentLevel);
+    }, 100);
   };
 
   return (

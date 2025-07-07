@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
 import { GameState, Level, Challenge } from '../types/game';
 import { levels } from '../data/levels';
@@ -17,57 +17,88 @@ export const useGameEngine = () => {
   });
 
   const [currentLevel, setCurrentLevel] = useState<Level>(levels[0]);
-  const [synth, setSynth] = useState<Tone.Synth | null>(null);
-  const [transport, setTransport] = useState<typeof Tone.Transport | null>(null);
+  const synthRef = useRef<Tone.Synth | null>(null);
+  const beatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Initialize synth
     const synthInstance = new Tone.Synth().toDestination();
-    setSynth(synthInstance);
-    setTransport(Tone.Transport);
+    synthRef.current = synthInstance;
 
     return () => {
-      synthInstance.dispose();
+      if (synthRef.current) {
+        synthRef.current.dispose();
+      }
+      if (beatIntervalRef.current) {
+        clearInterval(beatIntervalRef.current);
+      }
     };
   }, []);
 
   const startGame = useCallback(async () => {
-    if (transport && synth) {
-      await Tone.start();
-      transport.bpm.value = currentLevel.tempo;
-      transport.start();
-      
+    try {
+      // Start Tone.js audio context
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+
       setGameState(prev => ({
         ...prev,
         isPlaying: true,
         beatCount: 0
       }));
 
-      // Schedule beat events
-      transport.scheduleRepeat((time) => {
-        synth.triggerAttackRelease('C4', '8n', time);
+      // Calculate beat interval based on tempo
+      const beatInterval = (60 / currentLevel.tempo) * 1000; // Convert BPM to milliseconds
+
+      // Start beat counter
+      beatIntervalRef.current = setInterval(() => {
         setGameState(prev => ({
           ...prev,
           beatCount: prev.beatCount + 1
         }));
-      }, '4n');
-    }
-  }, [transport, synth, currentLevel.tempo]);
 
-  const stopGame = useCallback(() => {
-    if (transport) {
-      transport.stop();
-      transport.cancel();
+        // Play beat sound
+        if (synthRef.current) {
+          synthRef.current.triggerAttackRelease('C4', '8n');
+        }
+      }, beatInterval);
+
+    } catch (error) {
+      console.error('Failed to start audio:', error);
+      // Fallback: start without audio
       setGameState(prev => ({
         ...prev,
-        isPlaying: false,
+        isPlaying: true,
         beatCount: 0
       }));
+
+      const beatInterval = (60 / currentLevel.tempo) * 1000;
+      beatIntervalRef.current = setInterval(() => {
+        setGameState(prev => ({
+          ...prev,
+          beatCount: prev.beatCount + 1
+        }));
+      }, beatInterval);
     }
-  }, [transport]);
+  }, [currentLevel.tempo]);
+
+  const stopGame = useCallback(() => {
+    if (beatIntervalRef.current) {
+      clearInterval(beatIntervalRef.current);
+      beatIntervalRef.current = null;
+    }
+
+    setGameState(prev => ({
+      ...prev,
+      isPlaying: false
+    }));
+  }, []);
 
   const submitCode = useCallback((code: string) => {
     const currentChallenge = currentLevel.challenges[gameState.currentChallenge];
-    const isCorrect = code.trim() === currentChallenge.expectedCode.trim();
+    const normalizeCode = (str: string) => str.trim().replace(/\s+/g, ' ');
+    const isCorrect = normalizeCode(code) === normalizeCode(currentChallenge.expectedCode);
     
     if (isCorrect) {
       const points = 100 + (gameState.streak * 10);
@@ -89,11 +120,16 @@ export const useGameEngine = () => {
             showFeedback: false
           }));
         } else {
-          // Level complete
+          // Level complete - unlock next level
+          const nextLevelIndex = gameState.currentLevel + 1;
+          if (nextLevelIndex < levels.length) {
+            levels[nextLevelIndex].unlocked = true;
+          }
+          
           stopGame();
           setGameState(prev => ({
             ...prev,
-            feedback: 'Level Complete!',
+            feedback: 'Level Complete! 🎉',
             showFeedback: true
           }));
         }
@@ -102,7 +138,7 @@ export const useGameEngine = () => {
       setGameState(prev => ({
         ...prev,
         streak: 0,
-        feedback: 'Try again! Check the hint.',
+        feedback: 'Try again! Check the hint for guidance.',
         showFeedback: true
       }));
       
@@ -113,10 +149,11 @@ export const useGameEngine = () => {
         }));
       }, 2000);
     }
-  }, [currentLevel, gameState.currentChallenge, gameState.streak, stopGame]);
+  }, [currentLevel, gameState.currentChallenge, gameState.streak, gameState.currentLevel, stopGame]);
 
   const changeLevel = useCallback((levelIndex: number) => {
-    if (levelIndex >= 0 && levelIndex < levels.length) {
+    if (levelIndex >= 0 && levelIndex < levels.length && levels[levelIndex].unlocked) {
+      stopGame();
       setCurrentLevel(levels[levelIndex]);
       setGameState(prev => ({
         ...prev,
@@ -124,9 +161,9 @@ export const useGameEngine = () => {
         currentChallenge: 0,
         userCode: '',
         feedback: '',
-        showFeedback: false
+        showFeedback: false,
+        beatCount: 0
       }));
-      stopGame();
     }
   }, [stopGame]);
 

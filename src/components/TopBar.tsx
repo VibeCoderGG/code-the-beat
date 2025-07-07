@@ -18,6 +18,14 @@ export const TopBar: React.FC<TopBarProps> = ({
   onStopGame,
   onRestart
 }) => {
+  const handlePlayClick = async () => {
+    if (gameState.isPlaying) {
+      onStopGame();
+    } else {
+      await onStartGame();
+    }
+  };
+
   return (
     <div className="bg-gray-900 border-b border-gray-700 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -30,7 +38,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={gameState.isPlaying ? onStopGame : onStartGame}
+              onClick={handlePlayClick}
               className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               {gameState.isPlaying ? (
