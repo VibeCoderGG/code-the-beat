@@ -2,10 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, Trophy, Zap } from 'lucide-react';
 import { GameState, Level } from '../types/game';
+import { PlayerData } from '../hooks/usePlayerData';
 
 interface TopBarProps {
   gameState: GameState;
   currentLevel: Level;
+  playerData: PlayerData;
   onStartGame: () => void;
   onStopGame: () => void;
   onRestart: () => void;
@@ -14,6 +16,7 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({
   gameState,
   currentLevel,
+  playerData,
   onStartGame,
   onStopGame,
   onRestart
@@ -31,7 +34,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="text-xl font-bold text-white">
-            Code the Beat
+            Welcome back, {playerData.name}!
           </div>
           
           <div className="flex items-center space-x-2">
