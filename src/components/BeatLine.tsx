@@ -31,14 +31,14 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
   }, [currentLevel.challenges, gameState.currentChallenge]);
 
   return (
-    <div className="bg-gray-800 border-b border-gray-700 p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
+    <div className="bg-gray-800 border-b border-gray-700 p-3">
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+            <div className="bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-medium">
               Challenge {gameState.currentChallenge + 1}
             </div>
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-400 text-xs">
               of {currentLevel.challenges.length}
             </div>
           </div>
@@ -46,7 +46,7 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
             {Array.from({ length: currentLevel.challenges.length }, (_, i) => (
               <div
                 key={i}
-                className={`w-2 h-2 rounded-full ${
+                className={`w-1.5 h-1.5 rounded-full ${
                   i < gameState.currentChallenge
                     ? 'bg-green-500'
                     : i === gameState.currentChallenge
@@ -62,27 +62,27 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gray-900 border border-gray-600 rounded-lg p-4"
+          className="bg-gray-900 border border-gray-600 rounded-lg p-3"
         >
-          <div className="text-sm text-gray-400 mb-1">Your Task:</div>
-          <div className="text-lg text-white font-medium">{currentPrompt}</div>
+          <div className="text-xs text-gray-400 mb-1">Your Task:</div>
+          <div className="text-sm text-white font-medium">{currentPrompt}</div>
         </motion.div>
       </div>
       
-      <div className="relative h-16 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl overflow-hidden border border-gray-700">
+      <div className="relative h-12 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl overflow-hidden border border-gray-700">
         {/* Beat Track */}
-        <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600 transform -translate-y-1/2" />
+        <div className="absolute top-1/2 left-3 right-3 h-0.5 bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600 transform -translate-y-1/2" />
         
         {/* Beat Indicators */}
         {beatIndicators.map((indicator) => (
           <motion.div
             key={indicator.id}
-            className={`absolute top-1/2 w-3 h-3 rounded-full transform -translate-y-1/2 -translate-x-1/2 border-2 ${
+            className={`absolute top-1/2 w-2.5 h-2.5 rounded-full transform -translate-y-1/2 -translate-x-1/2 border-2 ${
               indicator.active 
                 ? 'bg-green-400 border-green-300 shadow-lg shadow-green-400/60' 
                 : 'bg-gray-700 border-gray-600'
             }`}
-            style={{ left: `${4 + (indicator.x * 0.92)}%` }}
+            style={{ left: `${3 + (indicator.x * 0.94)}%` }}
             animate={{
               scale: indicator.active ? 1.4 : 1,
               opacity: indicator.active ? 1 : 0.7
@@ -94,7 +94,7 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
         {/* Progress Line */}
         <motion.div
           className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-green-400 to-green-500 shadow-lg shadow-green-400/50"
-          style={{ left: `${4 + (((gameState.beatCount % 16) / 16) * 92)}%` }}
+          style={{ left: `${3 + (((gameState.beatCount % 16) / 16) * 94)}%` }}
           animate={{ 
             opacity: gameState.isPlaying ? 1 : 0,
             boxShadow: gameState.isPlaying ? '0 0 20px rgba(74, 222, 128, 0.6)' : '0 0 0px rgba(74, 222, 128, 0)'
@@ -109,14 +109,14 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
           return (
             <motion.div
               key={challenge.id}
-              className={`absolute top-1 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-bold ${
+              className={`absolute top-0.5 transform -translate-x-1/2 px-1.5 py-0.5 rounded-full text-xs font-bold ${
                 isCompleted 
                   ? 'bg-green-500 text-white' 
                   : isActive 
                   ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/40' 
                   : 'bg-gray-600 text-gray-300'
               }`}
-              style={{ left: `${4 + (((challenge.beatPosition % 16) / 16) * 92)}%` }}
+              style={{ left: `${3 + (((challenge.beatPosition % 16) / 16) * 94)}%` }}
               animate={{
                 scale: isActive ? 1.1 : 1
               }}
@@ -128,7 +128,7 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
         })}
         
         {/* Beat Counter */}
-        <div className="absolute top-1 right-3 text-xs font-mono text-gray-400 bg-gray-800 px-2 py-0.5 rounded">
+        <div className="absolute top-0.5 right-2 text-xs font-mono text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded">
           Beat: {gameState.beatCount}
         </div>
       </div>

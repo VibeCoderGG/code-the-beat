@@ -63,14 +63,14 @@ function App() {
         </div>
         
         {/* Bottom Action Bar */}
-        <div className="bg-gray-800 border-t border-gray-700 px-6 py-3">
+        <div className="bg-gray-800 border-t border-gray-700 px-4 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLevelSelector(true)}
-                className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center space-x-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm"
               >
                 <BookOpen className="w-4 h-4" />
                 <span>Levels</span>
@@ -80,7 +80,7 @@ function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLeaderboard(true)}
-                className="flex items-center space-x-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center space-x-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm"
               >
                 <Trophy className="w-4 h-4" />
                 <span>Leaderboard</span>
@@ -89,15 +89,15 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center space-x-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm"
               >
                 <Settings className="w-4 h-4" />
                 <span>Settings</span>
               </motion.button>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-400">
+            <div className="flex items-center space-x-2">
+              <div className="text-xs text-gray-400">
                 {currentLevel.description}
               </div>
               
@@ -106,7 +106,7 @@ function App() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowScoreSubmission(true)}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg transition-colors text-sm"
+                  className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-lg transition-colors text-xs"
                 >
                   <Trophy className="w-3 h-3" />
                   <span>Submit Score</span>
