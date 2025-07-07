@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
 import { GameState, Level, Challenge } from '../types/game';
 import { levels } from '../data/levels';
-import { submitScore } from '../lib/supabase';
 
-export const useGameEngine = (onScoreUpdate?: (score: number, level: number, challenges: number) => void) => {
+export const useGameEngine = () => {
   const [gameState, setGameState] = useState<GameState>({
     currentLevel: 0,
     currentChallenge: 0,
@@ -20,7 +19,6 @@ export const useGameEngine = (onScoreUpdate?: (score: number, level: number, cha
   const [currentLevel, setCurrentLevel] = useState<Level>(levels[0]);
   const synthRef = useRef<Tone.Synth | null>(null);
   const beatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSubmittedScore = useRef<number>(0);
 
   useEffect(() => {
     // Initialize synth
@@ -35,23 +33,6 @@ export const useGameEngine = (onScoreUpdate?: (score: number, level: number, cha
         clearInterval(beatIntervalRef.current);
       }
     };
-  }, []);
-
-  const autoSubmitScore = useCallback(async (playerName: string, score: number, level: number, challenges: number) => {
-    // Only submit if score improved significantly (by at least 100 points)
-    if (score > lastSubmittedScore.current + 100) {
-      try {
-        await submitScore({
-          player_name: playerName,
-          score,
-          level_reached: level,
-          challenges_completed: challenges
-        });
-        lastSubmittedScore.current = score;
-      } catch (error) {
-        console.error('Auto score submission failed:', error);
-      }
-    }
   }, []);
 
   const startGame = useCallback(async () => {
@@ -115,36 +96,19 @@ export const useGameEngine = (onScoreUpdate?: (score: number, level: number, cha
   }, []);
 
   const submitCode = useCallback((code: string) => {
-    const submitCode = useCallback((code: string, playerName?: string) => {
-    }
-    )
     const currentChallenge = currentLevel.challenges[gameState.currentChallenge];
     const normalizeCode = (str: string) => str.trim().replace(/\s+/g, ' ');
     const isCorrect = normalizeCode(code) === normalizeCode(currentChallenge.expectedCode);
     
     if (isCorrect) {
       const points = 100 + (gameState.streak * 10);
-      const newScore = gameState.score + points;
-      const newStreak = gameState.streak + 1;
-      
       setGameState(prev => ({
         ...prev,
-        score: newScore,
-        streak: newStreak,
+        score: prev.score + points,
+        streak: prev.streak + 1,
         feedback: `Perfect! +${points} points`,
         showFeedback: true
       }));
-
-      // Update player stats and auto-submit score
-      const challengesCompleted = gameState.currentChallenge + 1 + (gameState.currentLevel * 3);
-      if (onScoreUpdate) {
-        onScoreUpdate(newScore, gameState.currentLevel + 1, challengesCompleted);
-      }
-      
-      // Auto-submit score to leaderboard if player name is available
-      if (playerName) {
-        autoSubmitScore(playerName, newScore, gameState.currentLevel + 1, challengesCompleted);
-      }
       
       // Move to next challenge
       setTimeout(() => {
@@ -209,7 +173,7 @@ export const useGameEngine = (onScoreUpdate?: (score: number, level: number, cha
         }));
       }, 2000);
     }
-  }, [currentLevel, gameState.currentChallenge, gameState.streak, gameState.currentLevel, gameState.score, stopGame, onScoreUpdate, autoSubmitScore]);
+  }, [currentLevel, gameState.currentChallenge, gameState.streak, gameState.currentLevel, stopGame]);
 
   const changeLevel = useCallback((levelIndex: number) => {
     if (levelIndex >= 0 && levelIndex < levels.length && levels[levelIndex].unlocked) {
