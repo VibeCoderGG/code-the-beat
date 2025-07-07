@@ -69,55 +69,66 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
         </motion.div>
       </div>
       
-      <div className="relative h-20 bg-gray-900 rounded-lg overflow-hidden">
-        {/* Beat Line */}
-        <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-600 transform -translate-y-1/2" />
+      <div className="relative h-16 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl overflow-hidden border border-gray-700">
+        {/* Beat Track */}
+        <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600 transform -translate-y-1/2" />
         
         {/* Beat Indicators */}
         {beatIndicators.map((indicator) => (
           <motion.div
             key={indicator.id}
-            className={`absolute top-1/2 w-4 h-4 rounded-full transform -translate-y-1/2 -translate-x-1/2 ${
-              indicator.active ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-600'
+            className={`absolute top-1/2 w-3 h-3 rounded-full transform -translate-y-1/2 -translate-x-1/2 border-2 ${
+              indicator.active 
+                ? 'bg-green-400 border-green-300 shadow-lg shadow-green-400/60' 
+                : 'bg-gray-700 border-gray-600'
             }`}
-            style={{ left: `${indicator.x}%` }}
+            style={{ left: `${4 + (indicator.x * 0.92)}%` }}
             animate={{
-              scale: indicator.active ? 1.5 : 1,
-              opacity: indicator.active ? 1 : 0.6
+              scale: indicator.active ? 1.4 : 1,
+              opacity: indicator.active ? 1 : 0.7
             }}
-            transition={{ duration: 0.1 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
           />
         ))}
         
-        {/* Current Beat Line */}
+        {/* Progress Line */}
         <motion.div
-          className="absolute top-0 bottom-0 w-1 bg-green-500 shadow-lg shadow-green-500/50"
-          style={{ left: `${((gameState.beatCount % 16) / 16) * 100}%` }}
-          animate={{ opacity: gameState.isPlaying ? 1 : 0 }}
+          className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-green-400 to-green-500 shadow-lg shadow-green-400/50"
+          style={{ left: `${4 + (((gameState.beatCount % 16) / 16) * 92)}%` }}
+          animate={{ 
+            opacity: gameState.isPlaying ? 1 : 0,
+            boxShadow: gameState.isPlaying ? '0 0 20px rgba(74, 222, 128, 0.6)' : '0 0 0px rgba(74, 222, 128, 0)'
+          }}
+          transition={{ duration: 0.2 }}
         />
         
-        {/* Challenge Prompt Indicators */}
+        {/* Challenge Markers */}
         {currentLevel.challenges.map((challenge, index) => {
           const isActive = index === gameState.currentChallenge;
+          const isCompleted = index < gameState.currentChallenge;
           return (
             <motion.div
               key={challenge.id}
-              className={`absolute top-2 transform -translate-x-1/2 px-2 py-1 rounded text-xs font-medium ${
-                isActive ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-300'
+              className={`absolute top-1 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-bold ${
+                isCompleted 
+                  ? 'bg-green-500 text-white' 
+                  : isActive 
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/40' 
+                  : 'bg-gray-600 text-gray-300'
               }`}
-              style={{ left: `${((challenge.beatPosition % 16) / 16) * 100}%` }}
+              style={{ left: `${4 + (((challenge.beatPosition % 16) / 16) * 92)}%` }}
               animate={{
-                scale: isActive ? 1.1 : 1,
-                y: isActive ? -5 : 0
+                scale: isActive ? 1.1 : 1
               }}
+              transition={{ duration: 0.2 }}
             >
-              {index + 1}
+              {isCompleted ? '✓' : index + 1}
             </motion.div>
           );
         })}
         
         {/* Beat Counter */}
-        <div className="absolute top-2 right-2 text-sm font-mono text-gray-400">
+        <div className="absolute top-1 right-3 text-xs font-mono text-gray-400 bg-gray-800 px-2 py-0.5 rounded">
           Beat: {gameState.beatCount}
         </div>
       </div>
