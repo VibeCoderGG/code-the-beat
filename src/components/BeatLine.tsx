@@ -32,18 +32,40 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
 
   return (
     <div className="bg-gray-800 border-b border-gray-700 p-6">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-white mb-2">
-          Challenge {gameState.currentChallenge + 1} of {currentLevel.challenges.length}
-        </h2>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+              Challenge {gameState.currentChallenge + 1}
+            </div>
+            <div className="text-gray-400 text-sm">
+              of {currentLevel.challenges.length}
+            </div>
+          </div>
+          <div className="flex space-x-1">
+            {Array.from({ length: currentLevel.challenges.length }, (_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full ${
+                  i < gameState.currentChallenge
+                    ? 'bg-green-500'
+                    : i === gameState.currentChallenge
+                    ? 'bg-blue-500'
+                    : 'bg-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
         <motion.div
           key={currentPrompt}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-lg text-gray-300"
+          className="bg-gray-900 border border-gray-600 rounded-lg p-4"
         >
-          {currentPrompt}
+          <div className="text-sm text-gray-400 mb-1">Your Task:</div>
+          <div className="text-lg text-white font-medium">{currentPrompt}</div>
         </motion.div>
       </div>
       
