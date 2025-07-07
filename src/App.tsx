@@ -99,42 +99,6 @@ function App() {
           />
         )}
       </AnimatePresence>
-      
-      {/* Welcome Screen */}
-      {!gameState.isPlaying && gameState.beatCount === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40"
-        >
-          <div className="text-center">
-            <motion.h1
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-6xl font-bold mb-4 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent"
-            >
-              Code the Beat
-            </motion.h1>
-            <motion.p
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-xl text-gray-300 mb-8"
-            >
-              Learn programming through rhythm and music
-            </motion.p>
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-sm text-gray-400"
-            >
-              Press the Play button to start your coding journey
-            </motion.div>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }
