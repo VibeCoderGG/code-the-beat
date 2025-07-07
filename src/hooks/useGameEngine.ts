@@ -116,6 +116,8 @@ export const useGameEngine = (onScoreUpdate?: (score: number, level: number, cha
 
   const submitCode = useCallback((code: string) => {
     const submitCode = useCallback((code: string, playerName?: string) => {
+    }
+    )
     const currentChallenge = currentLevel.challenges[gameState.currentChallenge];
     const normalizeCode = (str: string) => str.trim().replace(/\s+/g, ' ');
     const isCorrect = normalizeCode(code) === normalizeCode(currentChallenge.expectedCode);
