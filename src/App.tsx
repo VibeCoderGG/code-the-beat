@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, BookOpen } from 'lucide-react';
+import { Settings, BookOpen, Trophy } from 'lucide-react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { TopBar } from './components/TopBar';
 import { BeatLine } from './components/BeatLine';
 import { CodeInput } from './components/CodeInput';
 import { LevelSelector } from './components/LevelSelector';
+import { Leaderboard } from './components/Leaderboard';
+import { ScoreSubmission } from './components/ScoreSubmission';
 
 function App() {
   const [showLevelSelector, setShowLevelSelector] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showScoreSubmission, setShowScoreSubmission] = useState(false);
   const {
     gameState,
     currentLevel,
@@ -19,6 +23,11 @@ function App() {
     updateUserCode,
     levels
   } = useGameEngine();
+
+  const handleScoreSubmitted = () => {
+    setShowScoreSubmission(false);
+    setShowLeaderboard(true);
+  };
 
   const handleRestart = () => {
     stopGame();
@@ -70,6 +79,16 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setShowLeaderboard(true)}
+                className="flex items-center space-x-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <Trophy className="w-4 h-4" />
+                <span>Leaderboard</span>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 <Settings className="w-4 h-4" />
@@ -77,8 +96,22 @@ function App() {
               </motion.button>
             </div>
             
-            <div className="text-sm text-gray-400">
-              {currentLevel.description}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-400">
+                {currentLevel.description}
+              </div>
+              
+              {gameState.score > 0 && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowScoreSubmission(true)}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg transition-colors text-sm"
+                >
+                  <Trophy className="w-3 h-3" />
+                  <span>Submit Score</span>
+                </motion.button>
+              )}
             </div>
           </div>
         </div>
@@ -96,6 +129,30 @@ function App() {
             }}
             isOpen={showLevelSelector}
             onClose={() => setShowLevelSelector(false)}
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* Leaderboard Modal */}
+      <AnimatePresence>
+        {showLeaderboard && (
+          <Leaderboard
+            isOpen={showLeaderboard}
+            onClose={() => setShowLeaderboard(false)}
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* Score Submission Modal */}
+      <AnimatePresence>
+        {showScoreSubmission && (
+          <ScoreSubmission
+            isOpen={showScoreSubmission}
+            onClose={() => setShowScoreSubmission(false)}
+            score={gameState.score}
+            levelReached={gameState.currentLevel + 1}
+            challengesCompleted={gameState.currentChallenge + (gameState.currentLevel * 3)}
+            onSubmitted={handleScoreSubmitted}
           />
         )}
       </AnimatePresence>
