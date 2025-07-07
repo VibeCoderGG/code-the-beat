@@ -132,6 +132,30 @@ export const useGameEngine = () => {
             feedback: 'Level Complete! 🎉',
             showFeedback: true
           }));
+          
+          // Auto-advance to next level after a delay
+          setTimeout(() => {
+            if (nextLevelIndex < levels.length) {
+              setCurrentLevel(levels[nextLevelIndex]);
+              setGameState(prev => ({
+                ...prev,
+                currentLevel: nextLevelIndex,
+                currentChallenge: 0,
+                userCode: '',
+                feedback: `Welcome to Level ${nextLevelIndex + 1}: ${levels[nextLevelIndex].title}!`,
+                showFeedback: true,
+                beatCount: 0
+              }));
+              
+              // Clear the welcome message after showing it
+              setTimeout(() => {
+                setGameState(prev => ({
+                  ...prev,
+                  showFeedback: false
+                }));
+              }, 2000);
+            }
+          }, 3000);
         }
       }, 1500);
     } else {
