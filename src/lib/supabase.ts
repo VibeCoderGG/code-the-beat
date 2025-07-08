@@ -34,3 +34,15 @@ export const getLeaderboard = async (limit = 10) => {
   if (error) throw error;
   return data;
 };
+
+export const getLeaderboardByLevel = async (level: number, limit = 5) => {
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .select('*')
+    .eq('level_reached', level)
+    .order('score', { ascending: false })
+    .limit(limit);
+  
+  if (error) throw error;
+  return data;
+};

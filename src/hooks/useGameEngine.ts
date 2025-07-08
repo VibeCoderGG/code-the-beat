@@ -133,6 +133,13 @@ export const useGameEngine = () => {
             showFeedback: true
           }));
           
+          // Trigger leaderboard refresh for the completed level
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('levelCompleted', { 
+              detail: { levelId: gameState.currentLevel + 1 } 
+            }));
+          }, 1000);
+          
           // Auto-advance to next level after a delay
           setTimeout(() => {
             if (nextLevelIndex < levels.length) {
