@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Trophy, Zap } from 'lucide-react';
+import { Play, Pause, RotateCcw, Trophy, Zap, Code2 } from 'lucide-react';
 import { GameState, Level } from '../types/game';
 
 interface TopBarProps {
   gameState: GameState;
   currentLevel: Level;
+  selectedLanguage: string;
+  onLanguageChange: (language: string) => void;
   onStartGame: () => void;
   onStopGame: () => void;
   onRestart: () => void;
@@ -14,10 +16,26 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({
   gameState,
   currentLevel,
+  selectedLanguage,
+  onLanguageChange,
   onStartGame,
   onStopGame,
   onRestart
 }) => {
+  const [showCustomInput, setShowCustomInput] = React.useState(false);
+  const [customLanguage, setCustomLanguage] = React.useState('');
+
+  const predefinedLanguages = [
+    { value: 'javascript', label: 'JavaScript', extension: 'js' },
+    { value: 'python', label: 'Python', extension: 'py' },
+    { value: 'java', label: 'Java', extension: 'java' },
+    { value: 'html', label: 'HTML', extension: 'html' },
+    { value: 'css', label: 'CSS', extension: 'css' },
+    { value: 'typescript', label: 'TypeScript', extension: 'ts' },
+    { value: 'cpp', label: 'C++', extension: 'cpp' },
+    { value: 'custom', label: 'Custom...', extension: '' }
+  ];
+
   const handlePlayClick = async () => {
     if (gameState.isPlaying) {
       onStopGame();
@@ -25,6 +43,25 @@ export const TopBar: React.FC<TopBarProps> = ({
       await onStartGame();
     }
   };
+
+  const handleLanguageSelect = (language: string) => {
+    if (language === 'custom') {
+      setShowCustomInput(true);
+    } else {
+      setShowCustomInput(false);
+      onLanguageChange(language);
+    }
+  };
+
+  const handleCustomLanguageSubmit = () => {
+    if (customLanguage.trim()) {
+      onLanguageChange(customLanguage.trim());
+      setShowCustomInput(false);
+      setCustomLanguage('');
+    }
+  };
+
+  const getCurrentLanguage = () => predefinedLanguages.find(lang => lang.value === selectedLanguage) || { label: selectedLanguage, extension: selectedLanguage };
 
   return (
     <div className="bg-gray-900 border-b border-gray-700 px-4 py-2">
@@ -67,6 +104,51 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
         
         <div className="flex items-center space-x-4">
+          {/* Language Selector */}
+          <div className="flex items-center space-x-2">
+            <Code2 className="w-4 h-4 text-gray-400" />
+            <div className="relative">
+              {showCustomInput ? (
+                <div className="flex items-center space-x-1">
+                  <input
+                    type="text"
+                    value={customLanguage}
+                    onChange={(e) => setCustomLanguage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleCustomLanguageSubmit()}
+                    placeholder="Enter language..."
+                    className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white w-24 focus:outline-none focus:border-blue-500"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleCustomLanguageSubmit}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs transition-colors"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCustomInput(false);
+                      setCustomLanguage('');
+                    }}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => handleLanguageSelect(e.target.value)}
+                  className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
+                >
+                  {predefinedLanguages.map(lang => (
+                    <option key={lang.value} value={lang.value}>{lang.label}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+          
           <div className="text-right">
             <div className="text-xs text-gray-400">Level {currentLevel.id}</div>
             <div className="text-sm font-semibold text-white">{currentLevel.title}</div>
@@ -84,20 +166,6 @@ export const TopBar: React.FC<TopBarProps> = ({
               <span className="text-white font-medium text-sm">{gameState.streak}</span>
             </div>
           </div>
-        </div>
-      </div>
-      
-      <div className="mt-2">
-        <div className="text-xs text-gray-400 mb-1">Progress</div>
-        <div className="w-full bg-gray-700 rounded-full h-1.5">
-          <motion.div
-            className="bg-gradient-to-r from-green-500 to-blue-500 h-1.5 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ 
-              width: `${((gameState.currentChallenge + 1) / currentLevel.challenges.length) * 100}%` 
-            }}
-            transition={{ duration: 0.5 }}
-          />
         </div>
       </div>
     </div>

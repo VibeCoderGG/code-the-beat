@@ -6,6 +6,7 @@ import { GameState, Level } from '../types/game';
 interface CodeInputProps {
   gameState: GameState;
   currentLevel: Level;
+  selectedLanguage: string;
   onSubmitCode: (code: string) => void;
   onUpdateCode: (code: string) => void;
 }
@@ -13,6 +14,7 @@ interface CodeInputProps {
 export const CodeInput: React.FC<CodeInputProps> = ({
   gameState,
   currentLevel,
+  selectedLanguage,
   onSubmitCode,
   onUpdateCode
 }) => {
@@ -27,6 +29,14 @@ export const CodeInput: React.FC<CodeInputProps> = ({
     if (gameState.userCode.trim()) {
       onSubmitCode(gameState.userCode);
     }
+  };
+
+  const getFileExtension = () => {
+    const extensions: { [key: string]: string } = {
+      javascript: 'js', python: 'py', java: 'java', html: 'html', 
+      css: 'css', typescript: 'ts', cpp: 'cpp'
+    };
+    return extensions[selectedLanguage] || selectedLanguage;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -91,7 +101,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
             <div className="w-2 h-2 bg-red-500 rounded-full"></div>
             <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-xs text-gray-400 ml-2">main.js</span>
+            <span className="text-xs text-gray-400 ml-2">main.{getFileExtension()}</span>
           </div>
         </div>
         

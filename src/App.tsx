@@ -5,6 +5,7 @@ import { useGameEngine } from './hooks/useGameEngine';
 import { TopBar } from './components/TopBar';
 import { BeatLine } from './components/BeatLine';
 import { CodeInput } from './components/CodeInput';
+import { AllLevelsLeaderboard } from './components/AllLevelsLeaderboard';
 import { LevelSelector } from './components/LevelSelector';
 import { Leaderboard } from './components/Leaderboard';
 import { ScoreSubmission } from './components/ScoreSubmission';
@@ -13,6 +14,7 @@ function App() {
   const [showLevelSelector, setShowLevelSelector] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showScoreSubmission, setShowScoreSubmission] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const {
     gameState,
     currentLevel,
@@ -43,6 +45,8 @@ function App() {
         <TopBar
           gameState={gameState}
           currentLevel={currentLevel}
+          selectedLanguage={selectedLanguage}
+          onLanguageChange={setSelectedLanguage}
           onStartGame={startGame}
           onStopGame={stopGame}
           onRestart={handleRestart}
@@ -57,10 +61,16 @@ function App() {
           <CodeInput
             gameState={gameState}
             currentLevel={currentLevel}
+            selectedLanguage={selectedLanguage}
             onSubmitCode={submitCode}
             onUpdateCode={updateUserCode}
           />
         </div>
+        
+        {/* All Levels Leaderboard */}
+        <AllLevelsLeaderboard
+          currentLevelId={currentLevel.id}
+        />
         
         {/* Bottom Action Bar */}
         <div className="bg-gray-800 border-t border-gray-700 px-4 py-2">
