@@ -43,7 +43,7 @@ export const levels: Level[] = [
     description: "Master repetition with for loops",
     tempo: 100,
     difficulty: 'beginner',
-    unlocked: false,
+    unlocked: true,
     challenges: [
       {
         id: 1,
@@ -70,7 +70,7 @@ export const levels: Level[] = [
     description: "Make decisions with conditional logic",
     tempo: 120,
     difficulty: 'intermediate',
-    unlocked: false,
+    unlocked: true,
     challenges: [
       {
         id: 1,
@@ -97,7 +97,7 @@ export const levels: Level[] = [
     description: "Create reusable code with functions",
     tempo: 140,
     difficulty: 'advanced',
-    unlocked: false,
+    unlocked: true,
     challenges: [
       {
         id: 1,

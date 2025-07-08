@@ -14,18 +14,16 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    // Load leaderboards for all unlocked levels
+    // Load leaderboards for all levels
     levels.forEach(level => {
-      if (level.unlocked) {
-        fetchLevelLeaderboard(level.id);
-      }
+      fetchLevelLeaderboard(level.id);
     });
   }, []);
 
   const fetchLevelLeaderboard = async (levelId: number) => {
     try {
       setLoading(prev => ({ ...prev, [levelId]: true }));
-      const data = await getLeaderboardByLevel(levelId, 5);
+      const data = await getLeaderboardByLevel(levelId, 3);
       setLeaderboards(prev => ({ ...prev, [levelId]: data || [] }));
     } catch (error) {
       console.error(`Failed to fetch leaderboard for level ${levelId}:`, error);
@@ -37,9 +35,7 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
 
   const refreshAllLeaderboards = () => {
     levels.forEach(level => {
-      if (level.unlocked) {
-        fetchLevelLeaderboard(level.id);
-      }
+      fetchLevelLeaderboard(level.id);
     });
   };
 
@@ -121,7 +117,7 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-64 overflow-y-auto">
-        {levels.filter(level => level.unlocked).map(level => (
+        {levels.map(level => (
           <motion.div
             key={level.id}
             initial={{ opacity: 0, y: 20 }}
@@ -206,7 +202,7 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
             {leaderboards[level.id]?.length > 0 && (
               <div className="mt-2 pt-1.5 border-t border-gray-700">
                 <div className="text-xs text-gray-500 text-center">
-                  {leaderboards[level.id].length} player{leaderboards[level.id].length !== 1 ? 's' : ''}
+                  Top {leaderboards[level.id].length} player{leaderboards[level.id].length !== 1 ? 's' : ''}
                 </div>
               </div>
             )}
