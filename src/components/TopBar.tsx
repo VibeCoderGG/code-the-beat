@@ -10,7 +10,7 @@ interface TopBarProps {
   onLanguageChange: (language: string) => void;
   onStartGame: () => void;
   onStopGame: () => void;
-  onRestart: () => void;
+  
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -18,9 +18,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   currentLevel,
   selectedLanguage,
   onLanguageChange,
-  onStartGame,
-  onStopGame,
-  onRestart
+  
 }) => {
   const [showCustomInput, setShowCustomInput] = React.useState(false);
   const [customLanguage, setCustomLanguage] = React.useState('');
@@ -36,13 +34,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     { value: 'custom', label: 'Custom...', extension: '' }
   ];
 
-  const handlePlayClick = async () => {
-    if (gameState.isPlaying) {
-      onStopGame();
-    } else {
-      await onStartGame();
-    }
-  };
+  
 
   const handleLanguageSelect = (language: string) => {
     if (language === 'custom') {
@@ -71,36 +63,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             Code the Beat
           </div>
           
-          <div className="flex items-center space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handlePlayClick}
-              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm"
-            >
-              {gameState.isPlaying ? (
-                <>
-                  <Pause className="w-4 h-4" />
-                  <span>Pause</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  <span>Play</span>
-                </>
-              )}
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onRestart}
-              className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Restart</span>
-            </motion.button>
-          </div>
+          
         </div>
         
         <div className="flex items-center space-x-4">

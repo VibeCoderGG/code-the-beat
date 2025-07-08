@@ -96,14 +96,7 @@ function App() {
                 <span>Leaderboard</span>
               </motion.button>
               
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center space-x-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm"
-              >
-                <Settings className="w-4 h-4" />
-                <span>Settings</span>
-              </motion.button>
+              
             </div>
             
             <div className="flex items-center space-x-2">

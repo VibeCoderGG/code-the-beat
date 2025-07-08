@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, User, Send, X } from 'lucide-react';
-import { submitScore } from '../lib/supabase';
+import { submitScore, playerExists } from '../lib/supabase';
 
 interface ScoreSubmissionProps {
   isOpen: boolean;
@@ -45,6 +45,14 @@ export const ScoreSubmission: React.FC<ScoreSubmissionProps> = ({
     try {
       setSubmitting(true);
       setError(null);
+      
+      // Check if player name already exists
+      const exists = await playerExists(playerName.trim());
+      if (exists) {
+        setError('Player already exists');
+        setSubmitting(false);
+        return;
+      }
       
       await submitScore({
         player_name: playerName.trim(),

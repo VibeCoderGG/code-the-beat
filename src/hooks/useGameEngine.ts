@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
-import { GameState, Level, Challenge } from '../types/game';
+import { GameState, Level } from '../types/game';
 import { levels } from '../data/levels';
+import { saveLocalPlayer, getLocalPlayer } from "../utils/storage";
+import { getOrCreatePlayerName } from "../utils/player"; // 👈 Add this
+
 
 export const useGameEngine = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -20,58 +23,39 @@ export const useGameEngine = () => {
   const synthRef = useRef<Tone.Synth | null>(null);
   const beatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const playerName = getOrCreatePlayerName();
+
+
+  // ✅ Restore saved progress on mount
   useEffect(() => {
-    // Initialize synth
+    const stored = getLocalPlayer();
+    if (stored) {
+      setGameState(prev => ({
+        ...prev,
+        score: stored.score,
+        currentLevel: stored.level_reached,
+        currentChallenge: stored.challenges_completed
+      }));
+      setCurrentLevel(levels[stored.level_reached]);
+    }
+  }, []);
+
+  // ✅ Setup Tone.js synth
+  useEffect(() => {
     const synthInstance = new Tone.Synth().toDestination();
     synthRef.current = synthInstance;
 
     return () => {
-      if (synthRef.current) {
-        synthRef.current.dispose();
-      }
-      if (beatIntervalRef.current) {
-        clearInterval(beatIntervalRef.current);
-      }
+      synthRef.current?.dispose();
+      if (beatIntervalRef.current) clearInterval(beatIntervalRef.current);
     };
   }, []);
 
   const startGame = useCallback(async () => {
     try {
-      // Start Tone.js audio context
-      if (Tone.context.state !== 'running') {
-        await Tone.start();
-      }
+      if (Tone.context.state !== 'running') await Tone.start();
 
-      setGameState(prev => ({
-        ...prev,
-        isPlaying: true,
-        beatCount: 0
-      }));
-
-      // Calculate beat interval based on tempo
-      const beatInterval = (60 / currentLevel.tempo) * 1000; // Convert BPM to milliseconds
-
-      // Start beat counter
-      beatIntervalRef.current = setInterval(() => {
-        setGameState(prev => ({
-          ...prev,
-          beatCount: prev.beatCount + 1
-        }));
-
-        // Play beat sound
-        if (synthRef.current) {
-          synthRef.current.triggerAttackRelease('C4', '8n');
-        }
-      }, beatInterval);
-
-    } catch (error) {
-      console.error('Failed to start audio:', error);
-      // Fallback: start without audio
-      setGameState(prev => ({
-        ...prev,
-        isPlaying: true,
-        beatCount: 0
-      }));
+      setGameState(prev => ({ ...prev, isPlaying: true, beatCount: 0 }));
 
       const beatInterval = (60 / currentLevel.tempo) * 1000;
       beatIntervalRef.current = setInterval(() => {
@@ -79,68 +63,71 @@ export const useGameEngine = () => {
           ...prev,
           beatCount: prev.beatCount + 1
         }));
+        synthRef.current?.triggerAttackRelease('C4', '8n');
       }, beatInterval);
+    } catch (error) {
+      console.error('Failed to start Tone.js:', error);
     }
   }, [currentLevel.tempo]);
 
   const stopGame = useCallback(() => {
-    if (beatIntervalRef.current) {
-      clearInterval(beatIntervalRef.current);
-      beatIntervalRef.current = null;
-    }
-
-    setGameState(prev => ({
-      ...prev,
-      isPlaying: false
-    }));
+    if (beatIntervalRef.current) clearInterval(beatIntervalRef.current);
+    setGameState(prev => ({ ...prev, isPlaying: false }));
   }, []);
 
   const submitCode = useCallback((code: string) => {
-    const currentChallenge = currentLevel.challenges[gameState.currentChallenge];
-    const normalizeCode = (str: string) => str.trim().replace(/\s+/g, ' ');
-    const isCorrect = normalizeCode(code) === normalizeCode(currentChallenge.expectedCode);
-    
+    const challenge = currentLevel.challenges[gameState.currentChallenge];
+    const normalize = (str: string) => str.trim().replace(/\s+/g, ' ');
+    const isCorrect = normalize(code) === normalize(challenge.expectedCode);
+
     if (isCorrect) {
-      const points = 100 + (gameState.streak * 10);
+      const points = 100 + gameState.streak * 10;
+      const newScore = gameState.score + points;
+      const newChallengeIndex = gameState.currentChallenge + 1;
+
       setGameState(prev => ({
         ...prev,
-        score: prev.score + points,
+        score: newScore,
         streak: prev.streak + 1,
         feedback: `Perfect! +${points} points`,
         showFeedback: true
       }));
-      
-      // Move to next challenge
+
+      // ✅ Save current progress
+      saveLocalPlayer(playerName, newScore, gameState.currentLevel, newChallengeIndex);
+
       setTimeout(() => {
+        // More challenges in current level
         if (gameState.currentChallenge < currentLevel.challenges.length - 1) {
           setGameState(prev => ({
             ...prev,
-            currentChallenge: prev.currentChallenge + 1,
+            currentChallenge: newChallengeIndex,
             userCode: '',
             showFeedback: false
           }));
         } else {
-          // Level complete - unlock next level
+          // ✅ LEVEL COMPLETE
           const nextLevelIndex = gameState.currentLevel + 1;
           if (nextLevelIndex < levels.length) {
             levels[nextLevelIndex].unlocked = true;
           }
-          
+
           stopGame();
+
           setGameState(prev => ({
             ...prev,
             feedback: 'Level Complete! 🎉',
             showFeedback: true
           }));
-          
-          // Trigger leaderboard refresh for the completed level
+
+          // Notify global listeners (e.g., leaderboard)
           setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('levelCompleted', { 
-              detail: { levelId: gameState.currentLevel + 1 } 
+            window.dispatchEvent(new CustomEvent('levelCompleted', {
+              detail: { levelId: gameState.currentLevel + 1 }
             }));
           }, 1000);
-          
-          // Auto-advance to next level after a delay
+
+          // Move to next level
           setTimeout(() => {
             if (nextLevelIndex < levels.length) {
               setCurrentLevel(levels[nextLevelIndex]);
@@ -153,13 +140,12 @@ export const useGameEngine = () => {
                 showFeedback: true,
                 beatCount: 0
               }));
-              
-              // Clear the welcome message after showing it
+
+              // Save fresh level progress
+              saveLocalPlayer(playerName, newScore, nextLevelIndex, 0);
+
               setTimeout(() => {
-                setGameState(prev => ({
-                  ...prev,
-                  showFeedback: false
-                }));
+                setGameState(prev => ({ ...prev, showFeedback: false }));
               }, 2000);
             }
           }, 3000);
@@ -172,15 +158,11 @@ export const useGameEngine = () => {
         feedback: 'Try again! Check the hint for guidance.',
         showFeedback: true
       }));
-      
       setTimeout(() => {
-        setGameState(prev => ({
-          ...prev,
-          showFeedback: false
-        }));
+        setGameState(prev => ({ ...prev, showFeedback: false }));
       }, 2000);
     }
-  }, [currentLevel, gameState.currentChallenge, gameState.streak, gameState.currentLevel, stopGame]);
+  }, [currentLevel, gameState, stopGame, playerName]);
 
   const changeLevel = useCallback((levelIndex: number) => {
     if (levelIndex >= 0 && levelIndex < levels.length && levels[levelIndex].unlocked) {
@@ -199,10 +181,7 @@ export const useGameEngine = () => {
   }, [stopGame]);
 
   const updateUserCode = useCallback((code: string) => {
-    setGameState(prev => ({
-      ...prev,
-      userCode: code
-    }));
+    setGameState(prev => ({ ...prev, userCode: code }));
   }, []);
 
   return {
