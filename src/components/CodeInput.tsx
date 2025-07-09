@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Lightbulb, Code, Terminal, CheckCircle, XCircle } from 'lucide-react';
 import { GameState, Level } from '../types/game';
+import { AIHints } from './AIHints';
 
 interface CodeInputProps {
   gameState: GameState;
@@ -204,6 +205,16 @@ export const CodeInput: React.FC<CodeInputProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* AI Hints */}
+      <div className="mt-4">
+        <AIHints
+          currentLevel={currentLevel}
+          currentChallenge={currentChallenge}
+          userCode={gameState.userCode}
+          attempts={gameState.attempts}
+        />
+      </div>
       
       {/* Footer */}
       <div className="mt-4 flex items-center justify-between text-sm text-gray-400 dark:text-gray-400 light:text-slate-600">

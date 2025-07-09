@@ -16,7 +16,8 @@ export const useGameEngine = () => {
     beatCount: 0,
     userCode: '',
     feedback: '',
-    showFeedback: false
+    showFeedback: false,
+    attempts: 0
   });
 
   const [currentLevel, setCurrentLevel] = useState<Level>(levels[0]);
@@ -90,7 +91,8 @@ export const useGameEngine = () => {
         score: newScore,
         streak: prev.streak + 1,
         feedback: `Perfect! +${points} points`,
-        showFeedback: true
+        showFeedback: true,
+        attempts: 0  // Reset attempts on success
       }));
 
       // ✅ Save current progress
@@ -103,7 +105,8 @@ export const useGameEngine = () => {
             ...prev,
             currentChallenge: newChallengeIndex,
             userCode: '',
-            showFeedback: false
+            showFeedback: false,
+            attempts: 0  // Reset attempts for new challenge
           }));
         } else {
           // ✅ LEVEL COMPLETE
@@ -155,6 +158,7 @@ export const useGameEngine = () => {
       setGameState(prev => ({
         ...prev,
         streak: 0,
+        attempts: prev.attempts + 1,  // Increment attempts on failure
         feedback: 'Try again! Check the hint for guidance.',
         showFeedback: true
       }));
@@ -175,7 +179,8 @@ export const useGameEngine = () => {
         userCode: '',
         feedback: '',
         showFeedback: false,
-        beatCount: 0
+        beatCount: 0,
+        attempts: 0  // Reset attempts when changing levels
       }));
     }
   }, [stopGame]);

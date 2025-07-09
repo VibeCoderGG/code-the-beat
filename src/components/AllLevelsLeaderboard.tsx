@@ -18,7 +18,6 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
     levels.forEach(level => {
       fetchLevelLeaderboard(level.id);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchLevelLeaderboard = async (levelId: number) => {
@@ -56,7 +55,7 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
   return (
     <div className="bg-black/30 dark:bg-black/30 light:bg-white/70 backdrop-blur-sm p-4 flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Target className="w-5 h-5 text-purple-400 dark:text-purple-400 light:text-indigo-600" />
           <h3 className="text-white dark:text-white light:text-slate-800 font-semibold">All Levels</h3>
@@ -90,34 +89,34 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
             exit={{ height: 0, opacity: 0 }}
             className="flex-1 min-h-0"
           >
-            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent space-y-3 pr-2">
-              {levels.map(level => {
-                const isCurrentLevel = level.id === currentLevelId;
-                const levelLeaderboard = (leaderboards[level.id] || []).slice(0, 3); // Limit to top 3
-                const isLoading = loading[level.id];
+            <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+              <div className="flex space-x-4 h-full min-w-max px-2">
+                {levels.map(level => {
+                  const isCurrentLevel = level.id === currentLevelId;
+                  const levelLeaderboard = (leaderboards[level.id] || []).slice(0, 3); // Limit to top 3
+                  const isLoading = loading[level.id];
 
-                return (
-                  <motion.div
-                    key={level.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={`bg-black/20 dark:bg-black/20 light:bg-white/60 backdrop-blur-sm rounded-lg border p-3 transition-all duration-200 ${
-                      isCurrentLevel 
-                        ? 'border-purple-500/50 bg-purple-500/10 dark:bg-purple-500/10 light:bg-indigo-200/40' 
-                        : 'border-white/10 dark:border-white/10 light:border-indigo-200/30 hover:border-white/20 dark:hover:border-white/20 light:hover:border-indigo-200/50'
-                    }`}
-                  >
+                  return (
+                    <motion.div
+                      key={level.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`bg-black/20 dark:bg-black/20 light:bg-white/60 backdrop-blur-sm rounded-lg border p-4 transition-all duration-200 min-w-80 h-full flex flex-col ${
+                        isCurrentLevel 
+                          ? 'border-purple-500/50 bg-purple-500/10 dark:bg-purple-500/10 light:bg-indigo-200/40' 
+                          : 'border-white/10 dark:border-white/10 light:border-indigo-200/30 hover:border-white/20 dark:hover:border-white/20 light:hover:border-indigo-200/50'
+                      }`}
+                    >
                     {/* Level Header */}
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-2">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
                           isCurrentLevel 
                             ? 'bg-purple-500 text-white' 
                             : 'bg-gray-700 dark:bg-gray-700 light:bg-slate-400 text-gray-300 dark:text-gray-300 light:text-white'
                         }`}>
                           {level.id}
                         </div>
-                        <div className="text-sm font-medium text-white dark:text-white light:text-slate-800">{level.title}</div>
                       </div>
                       <div className={`px-2 py-1 rounded text-xs ${
                         level.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400' :
@@ -128,14 +127,21 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
                       </div>
                     </div>
 
+                    {/* Level Title */}
+                    <div className="text-center mb-4">
+                      <h3 className="text-sm font-bold text-white dark:text-white light:text-slate-800 leading-tight">
+                        {level.title}
+                      </h3>
+                    </div>
+
                     {/* Leaderboard Entries */}
-                    <div className="space-y-1">
+                    <div className="flex-1 space-y-2">
                       {isLoading ? (
-                        <div className="flex items-center justify-center py-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
                         </div>
                       ) : levelLeaderboard.length === 0 ? (
-                        <div className="text-center py-2 text-gray-500 dark:text-gray-500 light:text-slate-500 text-xs">
+                        <div className="text-center py-4 text-gray-500 dark:text-gray-500 light:text-slate-500 text-sm">
                           No scores yet
                         </div>
                       ) : (
@@ -144,22 +150,22 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
                           return (
                             <div
                               key={entry.id}
-                              className="flex items-center justify-between py-1 px-2 bg-black/20 dark:bg-black/20 light:bg-white/50 rounded border border-white/5 dark:border-white/5 light:border-indigo-200/30"
+                              className="flex items-center justify-between py-2 px-3 bg-black/20 dark:bg-black/20 light:bg-white/50 rounded border border-white/5 dark:border-white/5 light:border-indigo-200/30"
                             >
                               <div className="flex items-center space-x-2">
-                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-black/30 dark:bg-black/30 light:bg-indigo-100/80">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-black/30 dark:bg-black/30 light:bg-indigo-100/80">
                                   {getRankIcon(rank)}
                                 </div>
                                 <div className="flex items-center space-x-1">
-                                  <User className="w-2 h-2 text-gray-400 dark:text-gray-400 light:text-slate-600" />
-                                  <span className="text-white dark:text-white light:text-slate-800 text-xs truncate max-w-20">
+                                  <User className="w-3 h-3 text-gray-400 dark:text-gray-400 light:text-slate-600" />
+                                  <span className="text-white dark:text-white light:text-slate-800 text-sm truncate max-w-24">
                                     {entry.player_name}
                                   </span>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-1">
-                                <Star className="w-2 h-2 text-yellow-400" />
-                                <span className="text-white dark:text-white light:text-slate-800 text-xs font-medium">
+                                <Star className="w-3 h-3 text-yellow-400" />
+                                <span className="text-white dark:text-white light:text-slate-800 text-sm font-medium">
                                   {entry.score.toLocaleString()}
                                 </span>
                               </div>
@@ -171,6 +177,7 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
                   </motion.div>
                 );
               })}
+              </div>
             </div>
           </motion.div>
         )}

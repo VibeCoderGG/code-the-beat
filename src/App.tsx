@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, BookOpen, Trophy, Zap, Music, Star } from 'lucide-react';
+import { Play, Pause, RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award } from 'lucide-react';
 import { useGameEngine } from './hooks/useGameEngine';
+import { useAchievements } from './hooks/useAchievements';
 import { TopBar } from './components/TopBar';
 import { BeatLine } from './components/BeatLine';
 import { CodeInput } from './components/CodeInput';
@@ -9,12 +10,20 @@ import { AllLevelsLeaderboard } from './components/AllLevelsLeaderboardNew';
 import { LevelSelector } from './components/LevelSelector';
 import { Leaderboard } from './components/Leaderboard';
 import { ScoreSubmission } from './components/ScoreSubmission';
+import { AchievementNotification } from './components/AchievementNotification';
+import { ProgressTracker } from './components/ProgressTracker';
+import { DashboardModal } from './components/DashboardModal';
+import { LevelProgress } from './components/LevelProgress';
+import { Achievement } from './types/game';
 
 function App() {
   const [showLevelSelector, setShowLevelSelector] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showScoreSubmission, setShowScoreSubmission] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
+  
   const {
     gameState,
     currentLevel,
@@ -25,6 +34,30 @@ function App() {
     updateUserCode,
     levels
   } = useGameEngine();
+
+  const { 
+    updatePlayerStats, 
+    checkAchievements, 
+    playerStats,
+    unlockedAchievements 
+  } = useAchievements();
+
+  // Update player stats when game state changes
+  useEffect(() => {
+    updatePlayerStats({
+      challenges_completed: gameState.currentChallenge + (gameState.currentLevel * 3),
+      levels_completed: gameState.currentLevel,
+      total_score: gameState.score,
+      max_streak: gameState.streak,
+      languages_used: [selectedLanguage]
+    });
+
+    // Check for new achievements
+    const newAchievements = checkAchievements();
+    if (newAchievements.length > 0) {
+      setNewAchievement(newAchievements[0]); // Show first new achievement
+    }
+  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, selectedLanguage, updatePlayerStats, checkAchievements]);
 
   const handleScoreSubmitted = () => {
     setShowScoreSubmission(false);
@@ -77,6 +110,13 @@ function App() {
                   <span className="text-xs text-gray-400 dark:text-gray-400 light:text-slate-600">pts</span>
                 </div>
               </div>
+
+              {/* Level Progress */}
+              <LevelProgress
+                gameState={gameState}
+                currentLevel={currentLevel}
+                levels={levels}
+              />
               
               {/* Streak Display */}
               {gameState.streak > 0 && (
@@ -130,20 +170,38 @@ function App() {
           currentLevel={currentLevel}
         />
         
-        <div className="flex flex-1 min-h-0">
-          {/* Main Content Area */}
-          <div className="flex-1 min-h-0">
-            <CodeInput
-              gameState={gameState}
-              currentLevel={currentLevel}
-              selectedLanguage={selectedLanguage}
-              onSubmitCode={submitCode}
-              onUpdateCode={updateUserCode}
-            />
+        <div className="flex flex-1 min-h-0 flex-col">
+          {/* Top Row - Code Editor and Progress Tracker */}
+          <div className="flex flex-1 min-h-0">
+            {/* Code Editor */}
+            <div className="flex-1 min-h-0">
+              <CodeInput
+                gameState={gameState}
+                currentLevel={currentLevel}
+                selectedLanguage={selectedLanguage}
+                onSubmitCode={submitCode}
+                onUpdateCode={updateUserCode}
+              />
+            </div>
+            
+            {/* Side Panel - Progress Tracker */}
+            <div className="w-80 bg-black/20 dark:bg-black/20 light:bg-white/70 backdrop-blur-sm border-l border-white/10 dark:border-white/10 light:border-indigo-200/50">
+              <div className="p-4 h-full">
+                <h2 className="text-lg font-bold text-white dark:text-white light:text-slate-800 mb-4 flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-yellow-400" />
+                  <span>Your Progress</span>
+                </h2>
+                <ProgressTracker
+                  playerStats={playerStats}
+                  currentStreak={gameState.streak}
+                  currentScore={gameState.score}
+                />
+              </div>
+            </div>
           </div>
           
-          {/* Side Panel */}
-          <div className="w-80 bg-black/20 dark:bg-black/20 light:bg-white/70 backdrop-blur-sm border-l border-white/10 dark:border-white/10 light:border-indigo-200/50">
+          {/* Bottom Row - All Levels Leaderboard (Full Width) */}
+          <div className="h-80 border-t border-white/10 dark:border-white/10 light:border-indigo-200/30 bg-black/10 dark:bg-black/10 light:bg-white/50 backdrop-blur-sm">
             <AllLevelsLeaderboard currentLevelId={currentLevel.id} />
           </div>
         </div>
@@ -192,8 +250,23 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setShowDashboard(true)}
+                className="flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-4 py-2 rounded-xl transition-all duration-200 relative"
+              >
+                <Award className="w-4 h-4" />
+                <span className="font-medium">Dashboard</span>
+                {unlockedAchievements.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {unlockedAchievements.length}
+                  </span>
+                )}
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLeaderboard(true)}
-                className="flex items-center space-x-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-400 px-4 py-2 rounded-xl transition-all duration-200"
+                className="flex items-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-xl transition-all duration-200"
               >
                 <Trophy className="w-4 h-4" />
                 <span className="font-medium">Leaderboard</span>
@@ -254,6 +327,36 @@ function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* Dashboard Modal */}
+      <AnimatePresence>
+        {showDashboard && (
+          <DashboardModal
+            isOpen={showDashboard}
+            onClose={() => setShowDashboard(false)}
+            playerStats={playerStats}
+            playerProgress={{
+              totalScore: playerStats.total_score,
+              totalChallengesCompleted: playerStats.challenges_completed,
+              totalLevelsCompleted: playerStats.levels_completed,
+              maxStreak: playerStats.max_streak,
+              perfectSubmissions: playerStats.perfect_submissions,
+              timePlayedMinutes: playerStats.total_playtime,
+              achievements: unlockedAchievements,
+              skillTree: { concepts: {}, totalLevel: 0, totalExperience: 0 },
+              dailyStreak: 0
+            }}
+            currentStreak={gameState.streak}
+            currentScore={gameState.score}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Achievement Notification */}
+      <AchievementNotification
+        achievement={newAchievement}
+        onClose={() => setNewAchievement(null)}
+      />
     </div>
   );
 }
