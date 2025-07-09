@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Award, Crown, User, Star, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Trophy, Medal, Award, Crown, User, Star, RefreshCw, Target, Clock } from 'lucide-react';
 import { GameState, Level } from '../types/game';
 import { getLeaderboardByLevel, LeaderboardEntry } from '../lib/supabase';
 
@@ -22,6 +22,7 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
 
   useEffect(() => {
     fetchLevelLeaderboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLevel.id]);
 
   const fetchLevelLeaderboard = async () => {
@@ -64,61 +65,93 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
   };
 
   return (
-    <div className="bg-gray-800 border-b border-gray-700 p-3">
+    <div className="bg-black/20 dark:bg-black/20 light:bg-white/60 backdrop-blur-sm border-b border-white/10 dark:border-white/10 light:border-indigo-200/50 p-6">
+      <div className="flex items-start justify-between space-x-6">
         {/* Challenge Info */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-medium">
-                Challenge {gameState.currentChallenge + 1}
+        <div className="flex-1 max-w-3xl">
+          {/* Progress Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Target className="w-5 h-5 text-blue-400" />
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Challenge {gameState.currentChallenge + 1}
+                </div>
               </div>
-              <div className="text-gray-400 text-xs">
+              <div className="text-gray-400 dark:text-gray-400 light:text-slate-600 text-sm">
                 of {currentLevel.challenges.length}
               </div>
             </div>
-            <div className="flex space-x-1">
+            
+            {/* Progress Dots */}
+            <div className="flex items-center space-x-2">
               {Array.from({ length: currentLevel.challenges.length }, (_, i) => (
-                <div
+                <motion.div
                   key={i}
-                  className={`w-1.5 h-1.5 rounded-full ${
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
                     i < gameState.currentChallenge
-                      ? 'bg-green-500'
+                      ? 'bg-green-500 shadow-lg shadow-green-500/50'
                       : i === gameState.currentChallenge
-                      ? 'bg-blue-500'
-                      : 'bg-gray-600'
+                      ? 'bg-blue-500 shadow-lg shadow-blue-500/50 animate-pulse'
+                      : 'bg-gray-600 border border-gray-500'
                   }`}
                 />
               ))}
             </div>
           </div>
+          
+          {/* Challenge Card */}
           <motion.div
             key={currentPrompt}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="bg-gray-900 border border-gray-600 rounded-lg p-3"
+            className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm border border-blue-500/20 rounded-xl p-6 shadow-xl"
           >
-            <div className="text-xs text-gray-400 mb-1">Your Task:</div>
-            <div className="text-sm text-white font-medium">{currentPrompt}</div>
+            <div className="flex items-start space-x-3">
+              <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 rounded-lg p-2 flex-shrink-0">
+                <Target className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm text-blue-300 dark:text-blue-300 light:text-indigo-600 mb-2 font-medium">Your Mission:</div>
+                <div className="text-white dark:text-white light:text-slate-800 text-lg font-medium leading-relaxed">
+                  {currentPrompt}
+                </div>
+              </div>
+            </div>
+            
+            {/* Beat Indicator */}
+            {gameState.isPlaying && (
+              <div className="mt-4 pt-4 border-t border-white/10 dark:border-white/10 light:border-gray-300/20">
+                <div className="flex items-center space-x-3">
+                  <Clock className="w-4 h-4 text-purple-400" />
+                  <div className="text-sm text-gray-300 dark:text-gray-300 light:text-gray-700">Beat:</div>
+                  <motion.div
+                    key={gameState.beatCount}
+                    initial={{ scale: 1.2, opacity: 0.5 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-purple-500/20 border border-purple-500/30 rounded-lg px-3 py-1"
+                  >
+                    <span className="text-purple-300 dark:text-purple-300 light:text-purple-600 font-mono font-bold">
+                      {gameState.beatCount}
+                    </span>
+                  </motion.div>
+                  <div className="flex-1 h-2 bg-gray-700 dark:bg-gray-700 light:bg-gray-300 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${(gameState.beatCount % 4) * 25}%` }}
+                      transition={{ duration: 0.1 }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
-    
-      
-      {/* Feedback */}
-      <AnimatePresence>
-        {gameState.showFeedback && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`mt-4 p-3 rounded-lg text-center font-medium ${
-              gameState.feedback.includes('Perfect') || gameState.feedback.includes('Complete')
-                ? 'bg-green-600 text-white'
-                : 'bg-red-600 text-white'
-            }`}
-          >
-            {gameState.feedback}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Send, Lightbulb, Code } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Send, Lightbulb, Code, Terminal, CheckCircle, XCircle } from 'lucide-react';
 import { GameState, Level } from '../types/game';
 
 interface CodeInputProps {
@@ -19,11 +19,17 @@ export const CodeInput: React.FC<CodeInputProps> = ({
   onUpdateCode
 }) => {
   const [showHint, setShowHint] = useState(false);
+  const [lineNumbers, setLineNumbers] = useState(1);
   const currentChallenge = currentLevel.challenges[gameState.currentChallenge];
 
   useEffect(() => {
     onUpdateCode('');
   }, [gameState.currentChallenge, onUpdateCode]);
+
+  useEffect(() => {
+    const lines = gameState.userCode.split('\n').length;
+    setLineNumbers(lines);
+  }, [gameState.userCode]);
 
   const handleSubmit = () => {
     if (gameState.userCode.trim()) {
@@ -46,22 +52,33 @@ export const CodeInput: React.FC<CodeInputProps> = ({
   };
 
   return (
-    <div className="bg-gray-900 p-3 min-h-0 flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <Code className="w-4 h-4 text-blue-400" />
-          <h3 className="text-sm font-semibold text-white">Code Editor</h3>
+    <div className="flex-1 bg-black/20 dark:bg-black/20 light:bg-white/60 backdrop-blur-sm p-6 min-h-0 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <Terminal className="w-5 h-5 text-purple-400 dark:text-purple-400 light:text-indigo-600" />
+            <h3 className="text-lg font-semibold text-white dark:text-white light:text-slate-800">Code Editor</h3>
+          </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-400 dark:text-gray-400 light:text-slate-600">
+            <Code className="w-4 h-4" />
+            <span>main.{getFileExtension()}</span>
+          </div>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowHint(!showHint)}
-            className="flex items-center space-x-1 bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-lg transition-colors text-xs"
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+              showHint 
+                ? 'bg-yellow-500/30 border border-yellow-500/50 text-yellow-300' 
+                : 'bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-400'
+            }`}
           >
-            <Lightbulb className="w-3 h-3" />
-            <span>Hint</span>
+            <Lightbulb className="w-4 h-4" />
+            <span className="font-medium">Hint</span>
           </motion.button>
           
           <motion.button
@@ -69,68 +86,137 @@ export const CodeInput: React.FC<CodeInputProps> = ({
             whileTap={{ scale: 0.95 }}
             onClick={handleSubmit}
             disabled={!gameState.userCode.trim()}
-            className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-1 rounded-lg transition-colors text-xs"
+            className={`flex items-center space-x-2 px-6 py-2 rounded-xl transition-all duration-200 font-medium ${
+              gameState.userCode.trim()
+                ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400'
+                : 'bg-gray-500/20 border border-gray-500/30 text-gray-500 cursor-not-allowed'
+            }`}
           >
-            <Send className="w-3 h-3" />
-            <span>Submit</span>
+            <Send className="w-4 h-4" />
+            <span>Submit Code</span>
           </motion.button>
         </div>
       </div>
       
-      {showHint && currentChallenge && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="bg-yellow-900 border border-yellow-600 rounded-lg p-2 mb-2"
-        >
-          <div className="text-yellow-200 text-xs">
-            <div className="font-medium mb-0.5">Hint:</div>
-            <ul className="list-disc list-inside space-y-1">
-              {currentChallenge.hints.map((hint, index) => (
-                <li key={index}>{hint}</li>
-              ))}
-            </ul>
-          </div>
-        </motion.div>
-      )}
+      {/* Hint Panel */}
+      <AnimatePresence>
+        {showHint && currentChallenge && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-sm border border-yellow-500/30 rounded-xl p-4"
+          >
+            <div className="flex items-start space-x-3">
+              <Lightbulb className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <div className="font-semibold text-yellow-300 mb-2">💡 Helpful Hints:</div>
+                <ul className="space-y-1">
+                  {currentChallenge.hints.map((hint, index) => (
+                    <motion.li 
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-start space-x-2 text-yellow-200"
+                    >
+                      <span className="text-yellow-400 mt-1">•</span>
+                      <span className="text-sm">{hint}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      <div className="flex-1 bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-        <div className="bg-gray-700 px-3 py-1.5 border-b border-gray-600">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-xs text-gray-400 ml-2">main.{getFileExtension()}</span>
+      {/* Code Editor */}
+      <div className="flex-1 bg-black/40 dark:bg-black/40 light:bg-white/80 backdrop-blur-sm rounded-xl border border-white/10 dark:border-white/10 light:border-indigo-200/50 overflow-hidden shadow-2xl flex flex-col min-h-0">
+        {/* Editor Header */}
+        <div className="bg-black/30 dark:bg-black/30 light:bg-indigo-50/80 backdrop-blur-sm px-4 py-3 border-b border-white/10 dark:border-white/10 light:border-indigo-200/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+              <span className="text-gray-400 dark:text-gray-400 light:text-slate-600 text-sm font-mono">main.{getFileExtension()}</span>
+            </div>
+            <div className="text-xs text-gray-400 dark:text-gray-400 light:text-slate-600">
+              {selectedLanguage.charAt(0).toUpperCase() + selectedLanguage.slice(1)}
+            </div>
           </div>
         </div>
         
-        <div className="p-3">
-          <div className="flex text-xs text-gray-400 mb-1">
-            <span className="w-6 text-right mr-3">1</span>
-            <span className="text-gray-500">// Complete the challenge below</span>
+        {/* Editor Content */}
+        <div className="flex flex-1 min-h-0 overflow-auto">
+          {/* Line Numbers */}
+          <div className="bg-black/20 dark:bg-black/20 light:bg-indigo-50/60 border-r border-white/5 dark:border-white/5 light:border-indigo-200/30 px-3 py-4 min-w-[3rem]">
+            <div className="font-mono text-xs text-gray-500 dark:text-gray-500 light:text-slate-500 space-y-[1.25rem]">
+              <div>1</div>
+              {Array.from({ length: Math.max(1, lineNumbers - 1) }, (_, i) => (
+                <div key={i + 2}>{i + 2}</div>
+              ))}
+            </div>
           </div>
           
-          <div className="flex">
-            <span className="w-6 text-xs text-gray-400 text-right mr-3">2</span>
-            <textarea
-              value={gameState.userCode}
-              onChange={(e) => onUpdateCode(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Type your code here..."
-              className="flex-1 bg-transparent text-white font-mono text-xs resize-none outline-none placeholder-gray-500 min-h-[60px]"
-              autoFocus
-            />
+          {/* Code Area */}
+          <div className="flex-1 p-4">
+            <div className="font-mono text-sm space-y-[1.25rem]">
+              <div className="text-gray-500 dark:text-gray-500 light:text-slate-500">// Complete the challenge below</div>
+              <textarea
+                value={gameState.userCode}
+                onChange={(e) => onUpdateCode(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Type your code here..."
+                className="w-full bg-transparent text-white dark:text-white light:text-slate-800 font-mono text-sm resize-none outline-none placeholder-gray-500 dark:placeholder-gray-500 light:placeholder-slate-500 min-h-[200px]"
+                style={{ lineHeight: '1.25rem' }}
+                autoFocus
+              />
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
-        <div>
-          Press <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">Cmd/Ctrl + Enter</kbd> to submit
+      {/* Feedback */}
+      <AnimatePresence>
+        {gameState.showFeedback && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`mt-4 p-4 rounded-xl border backdrop-blur-sm ${
+              gameState.feedback.includes('Perfect') || gameState.feedback.includes('Correct')
+                ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                : 'bg-red-500/10 border-red-500/30 text-red-300'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              {gameState.feedback.includes('Perfect') || gameState.feedback.includes('Correct') ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-400" />
+              )}
+              <span className="font-medium">{gameState.feedback}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Footer */}
+      <div className="mt-4 flex items-center justify-between text-sm text-gray-400 dark:text-gray-400 light:text-slate-600">
+        <div className="flex items-center space-x-4">
+          <kbd className="px-2 py-1 bg-black/30 dark:bg-black/30 light:bg-indigo-100/80 border border-white/20 dark:border-white/20 light:border-indigo-200/50 rounded text-xs">
+            Cmd/Ctrl + Enter
+          </kbd>
+          <span>to submit</span>
         </div>
-        <div>
-          {gameState.userCode.length} characters
+        <div className="flex items-center space-x-4">
+          <span>{gameState.userCode.length} characters</span>
+          <span>•</span>
+          <span>{lineNumbers} lines</span>
         </div>
       </div>
     </div>

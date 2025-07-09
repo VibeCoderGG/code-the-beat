@@ -1,7 +1,7 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Trophy, Zap, Code2 } from 'lucide-react';
+import { Code2, Sun, Moon } from 'lucide-react';
 import { GameState, Level } from '../types/game';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface TopBarProps {
   gameState: GameState;
@@ -10,16 +10,14 @@ interface TopBarProps {
   onLanguageChange: (language: string) => void;
   onStartGame: () => void;
   onStopGame: () => void;
-  
+  onRestart: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
-  gameState,
-  currentLevel,
   selectedLanguage,
   onLanguageChange,
-  
 }) => {
+  const { theme, toggleTheme } = useTheme();
   const [showCustomInput, setShowCustomInput] = React.useState(false);
   const [customLanguage, setCustomLanguage] = React.useState('');
 
@@ -33,8 +31,6 @@ export const TopBar: React.FC<TopBarProps> = ({
     { value: 'cpp', label: 'C++', extension: 'cpp' },
     { value: 'custom', label: 'Custom...', extension: '' }
   ];
-
-  
 
   const handleLanguageSelect = (language: string) => {
     if (language === 'custom') {
@@ -53,84 +49,66 @@ export const TopBar: React.FC<TopBarProps> = ({
     }
   };
 
-  const getCurrentLanguage = () => predefinedLanguages.find(lang => lang.value === selectedLanguage) || { label: selectedLanguage, extension: selectedLanguage };
-
   return (
-    <div className="bg-gray-900 border-b border-gray-700 px-4 py-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="text-xl font-bold text-white">
-            Code the Beat
-          </div>
-          
-          
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          {/* Language Selector */}
-          <div className="flex items-center space-x-2">
-            <Code2 className="w-4 h-4 text-gray-400" />
-            <div className="relative">
-              {showCustomInput ? (
-                <div className="flex items-center space-x-1">
-                  <input
-                    type="text"
-                    value={customLanguage}
-                    onChange={(e) => setCustomLanguage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleCustomLanguageSubmit()}
-                    placeholder="Enter language..."
-                    className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white w-24 focus:outline-none focus:border-blue-500"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleCustomLanguageSubmit}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs transition-colors"
-                  >
-                    ✓
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCustomInput(false);
-                      setCustomLanguage('');
-                    }}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <select
-                  value={selectedLanguage}
-                  onChange={(e) => handleLanguageSelect(e.target.value)}
-                  className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
-                >
-                  {predefinedLanguages.map(lang => (
-                    <option key={lang.value} value={lang.value}>{lang.label}</option>
-                  ))}
-                </select>
-              )}
+    <div className="flex items-center justify-between w-full">
+      {/* Language Selector */}
+      <div className="flex items-center space-x-2">
+        <Code2 className="w-4 h-4 text-gray-400 dark:text-gray-400 light:text-slate-600" />
+        <div className="relative">
+          {showCustomInput ? (
+            <div className="flex items-center space-x-1">
+              <input
+                type="text"
+                value={customLanguage}
+                onChange={(e) => setCustomLanguage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleCustomLanguageSubmit()}
+                placeholder="Enter language..."
+                className="bg-black/30 dark:bg-black/30 light:bg-white/80 backdrop-blur-sm border border-white/20 dark:border-white/20 light:border-indigo-200/50 rounded-lg px-3 py-1 text-sm text-white dark:text-white light:text-slate-800 w-32 focus:outline-none focus:border-purple-500"
+                autoFocus
+              />
+              <button
+                onClick={handleCustomLanguageSubmit}
+                className="bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400 px-2 py-1 rounded-lg text-sm transition-colors"
+              >
+                ✓
+              </button>
+              <button
+                onClick={() => {
+                  setShowCustomInput(false);
+                  setCustomLanguage('');
+                }}
+                className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 px-2 py-1 rounded-lg text-sm transition-colors"
+              >
+                ✕
+              </button>
             </div>
-          </div>
-          
-          <div className="text-right">
-            <div className="text-xs text-gray-400">Level {currentLevel.id}</div>
-            <div className="text-sm font-semibold text-white">{currentLevel.title}</div>
-            <div className="text-xs text-gray-400">{currentLevel.concept}</div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-1 bg-yellow-600 px-2 py-1 rounded-full">
-              <Trophy className="w-4 h-4 text-white" />
-              <span className="text-white font-medium text-sm">{gameState.score}</span>
-            </div>
-            
-            <div className="flex items-center space-x-1 bg-blue-600 px-2 py-1 rounded-full">
-              <Zap className="w-4 h-4 text-white" />
-              <span className="text-white font-medium text-sm">{gameState.streak}</span>
-            </div>
-          </div>
+          ) : (          <select
+            value={selectedLanguage}
+            onChange={(e) => handleLanguageSelect(e.target.value)}
+            className="bg-black/30 dark:bg-black/30 light:bg-white/80 backdrop-blur-sm border border-white/20 dark:border-white/20 light:border-indigo-200/50 rounded-lg px-3 py-2 text-sm text-white dark:text-white light:text-slate-800 focus:outline-none focus:border-purple-500 min-w-[120px]"
+          >
+            {predefinedLanguages.map(lang => (
+              <option key={lang.value} value={lang.value} className="bg-gray-800 dark:bg-gray-800 light:bg-white text-white dark:text-white light:text-slate-800">
+                {lang.label}
+              </option>
+            ))}
+          </select>
+          )}
         </div>
       </div>
+
+      {/* Theme Toggle Button */}
+      <button
+        onClick={toggleTheme}
+        className="flex items-center justify-center w-10 h-10 bg-black/20 dark:bg-black/20 light:bg-white/80 backdrop-blur-sm border border-white/20 dark:border-white/20 light:border-indigo-200/50 rounded-lg hover:bg-black/30 dark:hover:bg-black/30 light:hover:bg-white/90 transition-all duration-200 group"
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      >
+        {theme === 'dark' ? (
+          <Sun className="w-5 h-5 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
+        ) : (
+          <Moon className="w-5 h-5 text-indigo-600 group-hover:text-indigo-500 transition-colors" />
+        )}
+      </button>
     </div>
   );
 };
