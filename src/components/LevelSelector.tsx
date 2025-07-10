@@ -61,12 +61,12 @@ export const LevelSelector: React.FC<LevelSelectorProps> = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => level.unlocked ? onSelectLevel(index) : null}
-              className={`p-4 rounded-lg border transition-all cursor-pointer ${
+              className={`p-4 rounded-lg border transition-all ${
                 level.unlocked
                   ? index === currentLevelIndex
-                    ? 'bg-blue-600 border-blue-500'
-                    : 'bg-gray-700 border-gray-600 hover:border-gray-500'
-                  : 'bg-gray-800 border-gray-700 cursor-not-allowed opacity-50'
+                    ? 'bg-blue-600 border-blue-500 cursor-pointer'
+                    : 'bg-gray-700 border-gray-600 hover:border-gray-500 cursor-pointer'
+                  : 'bg-gray-900 border-gray-800 cursor-not-allowed opacity-60'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
@@ -86,17 +86,28 @@ export const LevelSelector: React.FC<LevelSelectorProps> = ({
                 )}
               </div>
               
-              <h3 className="font-semibold text-white mb-1">{level.title}</h3>
-              <p className="text-sm text-gray-400 mb-2">{level.description}</p>
+              <h3 className={`font-semibold mb-1 ${level.unlocked ? 'text-white' : 'text-gray-500'}`}>
+                {level.title}
+                {!level.unlocked && (
+                  <span className="ml-2 text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
+                    LOCKED
+                  </span>
+                )}
+              </h3>
+              <p className={`text-sm mb-2 ${level.unlocked ? 'text-gray-400' : 'text-gray-600'}`}>
+                {level.unlocked ? level.description : 'Complete the previous level to unlock'}
+              </p>
               
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">
-                  {level.challenges.length} challenges
+                <span className={`${level.unlocked ? 'text-gray-300' : 'text-gray-500'}`}>
+                  {level.unlocked ? `${level.challenges.length} challenges` : 'Complete previous level'}
                 </span>
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4 text-yellow-400" />
-                  <span className="text-gray-300">{level.tempo} BPM</span>
-                </div>
+                {level.unlocked && (
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    <span className="text-gray-300">{level.tempo} BPM</span>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

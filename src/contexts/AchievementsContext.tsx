@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Achievement, PlayerStats } from '../types/game';
 import { achievementsData } from '../data/achievements';
 
@@ -72,7 +72,7 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(playerStats));
   }, [playerStats]);
 
-  const updatePlayerStats = (newStats: Partial<PlayerStats>) => {
+  const updatePlayerStats = useCallback((newStats: Partial<PlayerStats>) => {
     setPlayerStats((prev: PlayerStats) => {
       const updated = { ...prev, ...newStats };
       
@@ -94,9 +94,9 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       return updated;
     });
-  };
+  }, []);
 
-  const getAchievementProgress = (achievement: Achievement): number => {
+  const getAchievementProgress = useCallback((achievement: Achievement): number => {
     const req = achievement.requirement;
     
     switch (req.type) {
@@ -121,13 +121,13 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       default:
         return 0;
     }
-  };
+  }, [playerStats]);
 
-  const isAchievementUnlocked = (achievementId: string): boolean => {
+  const isAchievementUnlocked = useCallback((achievementId: string): boolean => {
     return unlockedAchievements.some(a => a.id === achievementId);
-  };
+  }, [unlockedAchievements]);
 
-  const checkAchievements = (): Achievement[] => {
+  const checkAchievements = useCallback((): Achievement[] => {
     const newlyUnlocked: Achievement[] = [];
 
     for (const achievement of achievementsData) {
@@ -150,16 +150,16 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     return newlyUnlocked;
-  };
+  }, [isAchievementUnlocked, getAchievementProgress]);
 
-  const value: AchievementsContextType = {
+  const value: AchievementsContextType = useMemo(() => ({
     unlockedAchievements,
     playerStats,
     checkAchievements,
     updatePlayerStats,
     getAchievementProgress,
     isAchievementUnlocked
-  };
+  }), [unlockedAchievements, playerStats, checkAchievements, updatePlayerStats, getAchievementProgress, isAchievementUnlocked]);
 
   return (
     <AchievementsContext.Provider value={value}>
