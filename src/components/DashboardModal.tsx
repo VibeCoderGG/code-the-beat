@@ -13,6 +13,11 @@ interface DashboardModalProps {
   playerProgress: PlayerProgress;
   currentStreak: number;
   currentScore: number;
+  onResetLevel?: () => void;
+  onResetProgress?: () => void;
+  currentAttempts?: number;
+  unlockedLevels?: number[];
+  levelCheckpoints?: { [levelId: number]: number };
 }
 
 export const DashboardModal: React.FC<DashboardModalProps> = ({
@@ -21,7 +26,12 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
   playerStats,
   playerProgress,
   currentStreak,
-  currentScore
+  currentScore,
+  onResetLevel,
+  onResetProgress,
+  currentAttempts = 0,
+  unlockedLevels = [1],
+  levelCheckpoints = { 1: 0 }
 }) => {
   const [activeTab, setActiveTab] = useState<'progress' | 'skills' | 'achievements'>('progress');
 
@@ -122,7 +132,15 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <SkillTree playerStats={playerStats} />
+                  <SkillTree 
+                    playerStats={playerStats}
+                    onResetLevel={onResetLevel}
+                    onResetProgress={onResetProgress}
+                    currentAttempts={currentAttempts}
+                    totalPenalties={Math.max(0, playerStats.challenges_completed * 5 - playerStats.total_score / 100)} // Estimate penalties from stats
+                    levelsUnlocked={unlockedLevels.length}
+                    checkpointScore={levelCheckpoints[unlockedLevels[unlockedLevels.length - 1]] || 0}
+                  />
                 </motion.div>
               )}
 

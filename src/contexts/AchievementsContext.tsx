@@ -14,6 +14,7 @@ interface AchievementsContextType {
   updatePlayerStats: (stats: Partial<PlayerStats>) => void;
   getAchievementProgress: (achievement: Achievement) => number;
   isAchievementUnlocked: (achievementId: string) => boolean;
+  resetAllProgress: () => void;
 }
 
 const AchievementsContext = createContext<AchievementsContextType | undefined>(undefined);
@@ -152,13 +153,33 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return newlyUnlocked;
   };
 
+  const resetAllProgress = () => {
+    // Reset all state to initial values
+    setUnlockedAchievements([]);
+    setPlayerStats({
+      challenges_completed: 0,
+      levels_completed: 0,
+      total_score: 0,
+      max_streak: 0,
+      perfect_submissions: 0,
+      total_playtime: 0,
+      languages_used: [],
+      special_counters: {}
+    });
+    
+    // Clear localStorage
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STATS_STORAGE_KEY);
+  };
+
   const value: AchievementsContextType = {
     unlockedAchievements,
     playerStats,
     checkAchievements,
     updatePlayerStats,
     getAchievementProgress,
-    isAchievementUnlocked
+    isAchievementUnlocked,
+    resetAllProgress
   };
 
   return (

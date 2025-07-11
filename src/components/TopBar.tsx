@@ -10,7 +10,6 @@ interface TopBarProps {
   onLanguageChange: (language: string) => void;
   onStartGame: () => void;
   onStopGame: () => void;
-  onRestart: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
