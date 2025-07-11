@@ -32,14 +32,19 @@ function App() {
     submitCode,
     changeLevel,
     updateUserCode,
-    levels
+    resetGame,
+    resetToCheckpoint,
+    levels,
+    unlockedLevels,
+    levelCheckpoints
   } = useGameEngine();
 
   const { 
     updatePlayerStats, 
     checkAchievements, 
     playerStats,
-    unlockedAchievements 
+    unlockedAchievements,
+    resetAllProgress
   } = useAchievements();
 
   // Update player stats when game state changes
@@ -65,10 +70,39 @@ function App() {
   };
 
   const handleRestart = () => {
-    stopGame();
-    setTimeout(() => {
-      changeLevel(gameState.currentLevel);
-    }, 100);
+    // Show confirmation dialog
+    const confirmReset = window.confirm(
+      "Are you sure you want to restart? This will:\n\n" +
+      "• Reset your score to 0\n" +
+      "• Reset to Level 1, Question 1\n" +
+      "• Clear all achievements\n" +
+      "• Reset all statistics\n\n" +
+      "This action cannot be undone!"
+    );
+    
+    if (confirmReset) {
+      // Reset game state completely
+      const resetSuccess = resetGame();
+      
+      if (resetSuccess) {
+        // Reset achievements and player stats
+        resetAllProgress();
+        
+        // Show success alert
+        alert("✅ Game successfully reset!\n\nAll progress, achievements, and statistics have been cleared.\nYou're back to Level 1 with a fresh start!");
+        
+        // Force page reload to ensure everything is reset
+        window.location.reload();
+      }
+    }
+  };
+
+  const handleResetLevel = () => {
+    resetToCheckpoint();
+  };
+
+  const handleResetProgress = () => {
+    handleRestart();
   };
 
   return (
@@ -111,6 +145,15 @@ function App() {
                 </div>
               </div>
 
+              {/* Attempt Counter */}
+              {gameState.attempts > 0 && (
+                <div className="bg-red-500/20 text-red-400 border border-red-500/30 backdrop-blur-sm rounded-xl px-3 py-2">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-xs font-medium">Attempts: {gameState.attempts}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Level Progress */}
               <LevelProgress
                 gameState={gameState}
@@ -136,7 +179,6 @@ function App() {
                 onLanguageChange={setSelectedLanguage}
                 onStartGame={startGame}
                 onStopGame={stopGame}
-                onRestart={handleRestart}
               />
             </div>
           </div>
@@ -154,6 +196,13 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-2">
+              {/* Checkpoint indicator */}
+              {levelCheckpoints && levelCheckpoints[currentLevel.id] !== undefined && (
+                <div className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded-lg text-xs font-medium">
+                  Checkpoint: {levelCheckpoints[currentLevel.id]?.toLocaleString() || 0}
+                </div>
+              )}
+              
               <div className={`px-2 py-1 rounded-lg text-xs font-medium ${
                 currentLevel.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
                 currentLevel.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
@@ -228,11 +277,26 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleRestart}
-                className="flex items-center space-x-2 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-500/30 text-gray-400 px-4 py-2 rounded-xl transition-all duration-200"
+                onClick={() => {
+                  resetToCheckpoint();
+                  alert("🔄 Level restarted!\n\nYou're back at the start of this level with your checkpoint score.");
+                }}
+                className="flex items-center space-x-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 px-4 py-2 rounded-xl transition-all duration-200"
+                title="Reset to the start of the current level with your checkpoint score"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span className="font-medium">Restart</span>
+                <span className="font-medium">Restart Level</span>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRestart}
+                className="flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 px-4 py-2 rounded-xl transition-all duration-200"
+                title="Reset all progress, achievements, and statistics - complete restart"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="font-medium">Reset All</span>
               </motion.button>
             </div>
             
@@ -348,6 +412,11 @@ function App() {
             }}
             currentStreak={gameState.streak}
             currentScore={gameState.score}
+            onResetLevel={handleResetLevel}
+            onResetProgress={handleResetProgress}
+            currentAttempts={gameState.attempts}
+            unlockedLevels={unlockedLevels}
+            levelCheckpoints={levelCheckpoints}
           />
         )}
       </AnimatePresence>

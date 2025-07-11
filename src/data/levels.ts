@@ -8,7 +8,7 @@ export const levels: Level[] = [
     description: "Learn to store and use data in variables",
     tempo: 80,
     difficulty: 'beginner',
-    unlocked: true,
+    unlocked: true, // First level is always unlocked
     challenges: [
       {
         id: 1,
@@ -43,7 +43,7 @@ export const levels: Level[] = [
     description: "Master repetition with for loops",
     tempo: 100,
     difficulty: 'beginner',
-    unlocked: true,
+    unlocked: false, // Locked until level 1 is completed
     challenges: [
       {
         id: 1,
@@ -70,7 +70,7 @@ export const levels: Level[] = [
     description: "Make decisions with conditional logic",
     tempo: 120,
     difficulty: 'intermediate',
-    unlocked: true,
+    unlocked: false, // Locked until level 2 is completed
     challenges: [
       {
         id: 1,
@@ -97,7 +97,7 @@ export const levels: Level[] = [
     description: "Create reusable code with functions",
     tempo: 140,
     difficulty: 'advanced',
-    unlocked: true,
+    unlocked: false, // Locked until level 3 is completed
     challenges: [
       {
         id: 1,
