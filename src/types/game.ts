@@ -7,9 +7,6 @@ export interface Level {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   challenges: Challenge[];
   unlocked: boolean;
-  isDynamic?: boolean;
-  language?: string;
-  generatedAt?: string;
 }
 
 export interface Challenge {
@@ -19,7 +16,6 @@ export interface Challenge {
   hints: string[];
   beatPosition: number;
   timeSignature: number;
-  explanation?: string;
 }
 
 export interface GameState {

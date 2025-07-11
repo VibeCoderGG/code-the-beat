@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award, Undo, RefreshCw, Sparkles } from 'lucide-react';
+import { Play, Pause, RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award } from 'lucide-react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { useAchievements } from './hooks/useAchievements';
 import { TopBar } from './components/TopBar';
@@ -21,6 +21,7 @@ function App() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showScoreSubmission, setShowScoreSubmission] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
   
   const {
@@ -31,14 +32,7 @@ function App() {
     submitCode,
     changeLevel,
     updateUserCode,
-    resetGame,
-    resetToCheckpoint,
-    changeLanguage,
-    regenerateCurrentLevel,
-    levels,
-    levelCheckpoints,
-    selectedLanguage,
-    isGeneratingLevel
+    levels
   } = useGameEngine();
 
   const { 
@@ -71,23 +65,10 @@ function App() {
   };
 
   const handleRestart = () => {
-    // Show confirmation dialog before resetting
-    const confirmReset = window.confirm(
-      "Are you sure you want to reset all progress? This will:\n\n" +
-      "• Reset your score to 0\n" +
-      "• Lock all levels except Level 1\n" +
-      "• Clear all achievements\n" +
-      "• Reset all statistics\n\n" +
-      "This action cannot be undone!"
-    );
-    
-    if (confirmReset) {
-      const resetSuccess = resetGame();
-      if (resetSuccess) {
-        // Force a page reload to ensure all components are reset
-        window.location.reload();
-      }
-    }
+    stopGame();
+    setTimeout(() => {
+      changeLevel(gameState.currentLevel);
+    }, 100);
   };
 
   return (
@@ -130,15 +111,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Attempt Counter */}
-              {gameState.attempts > 0 && (
-                <div className="bg-red-500/20 text-red-400 border border-red-500/30 backdrop-blur-sm rounded-xl px-3 py-2">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-xs font-medium">Attempts: {gameState.attempts}</span>
-                  </div>
-                </div>
-              )}
-
               {/* Level Progress */}
               <LevelProgress
                 gameState={gameState}
@@ -161,7 +133,7 @@ function App() {
                 gameState={gameState}
                 currentLevel={currentLevel}
                 selectedLanguage={selectedLanguage}
-                onLanguageChange={changeLanguage}
+                onLanguageChange={setSelectedLanguage}
                 onStartGame={startGame}
                 onStopGame={stopGame}
                 onRestart={handleRestart}
@@ -178,35 +150,10 @@ function App() {
                 Level {currentLevel.id}
               </div>
               <div className="text-white dark:text-white light:text-slate-800 font-semibold">{currentLevel.title}</div>
-              <div className="text-gray-400 dark:text-gray-400 light:text-slate-600 text-sm">
-                {currentLevel.description} • {currentLevel.challenges.length} challenges
-              </div>
-              
-              {/* Dynamic Level Indicator */}
-              {currentLevel.isDynamic && (
-                <div className="flex items-center space-x-1 bg-purple-500/20 text-purple-400 px-2 py-1 rounded-lg text-xs">
-                  <Sparkles className="w-3 h-3" />
-                  <span>AI Generated</span>
-                </div>
-              )}
-              
-              {/* Generation Loading Indicator */}
-              {isGeneratingLevel && (
-                <div className="flex items-center space-x-1 bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-lg text-xs">
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                  <span>Generating...</span>
-                </div>
-              )}
+              <div className="text-gray-400 dark:text-gray-400 light:text-slate-600 text-sm">{currentLevel.description}</div>
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* Checkpoint indicator */}
-              {levelCheckpoints && levelCheckpoints[currentLevel.id] !== undefined && (
-                <div className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded-lg text-xs font-medium">
-                  Checkpoint: {levelCheckpoints[currentLevel.id]?.toLocaleString() || 0}
-                </div>
-              )}
-              
               <div className={`px-2 py-1 rounded-lg text-xs font-medium ${
                 currentLevel.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
                 currentLevel.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
@@ -281,39 +228,11 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={regenerateCurrentLevel}
-                disabled={isGeneratingLevel}
-                className="flex items-center space-x-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-400 px-4 py-2 rounded-xl transition-all duration-200 disabled:opacity-50"
-                title="Generate new AI challenges for this level"
-              >
-                {isGeneratingLevel ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-                <span className="font-medium">New Challenges</span>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={resetToCheckpoint}
-                className="flex items-center space-x-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 px-4 py-2 rounded-xl transition-all duration-200"
-                title="Reset to the start of the current level with your checkpoint score"
-              >
-                <Undo className="w-4 h-4" />
-                <span className="font-medium">Reset Level</span>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={handleRestart}
-                className="flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 px-4 py-2 rounded-xl transition-all duration-200"
-                title="Reset all progress, achievements, and unlock only Level 1"
+                className="flex items-center space-x-2 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-500/30 text-gray-400 px-4 py-2 rounded-xl transition-all duration-200"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span className="font-medium">Reset Progress</span>
+                <span className="font-medium">Restart</span>
               </motion.button>
             </div>
             
