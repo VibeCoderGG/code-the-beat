@@ -1,10 +1,11 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { Achievement, PlayerStats } from '../types/game';
 import { achievementsData } from '../data/achievements';
 
 interface UnlockedAchievement extends Achievement {
   unlockedAt: Date;
   progress: number;
+  seen: boolean; // Track if achievement notification has been seen
 }
 
 interface AchievementsContextType {
@@ -15,6 +16,9 @@ interface AchievementsContextType {
   getAchievementProgress: (achievement: Achievement) => number;
   isAchievementUnlocked: (achievementId: string) => boolean;
   resetAllProgress: () => void;
+  markAchievementsAsSeen: () => void;
+  getUnseenAchievements: () => UnlockedAchievement[];
+  addAchievementPoints: (points: number) => void;
 }
 
 const AchievementsContext = createContext<AchievementsContextType | undefined>(undefined);
@@ -36,6 +40,7 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     languages_used: [],
     special_counters: {}
   });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load saved data on mount
   useEffect(() => {
@@ -47,7 +52,8 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const parsed = JSON.parse(savedAchievements);
         setUnlockedAchievements(parsed.map((a: UnlockedAchievement) => ({
           ...a,
-          unlockedAt: new Date(a.unlockedAt)
+          unlockedAt: new Date(a.unlockedAt),
+          seen: a.seen || false // Default to false if not present
         })));
       } catch (error) {
         console.error('Failed to load achievements:', error);
@@ -56,11 +62,15 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     if (savedStats) {
       try {
-        setPlayerStats(JSON.parse(savedStats));
+        const loadedStats = JSON.parse(savedStats);
+        setPlayerStats(loadedStats);
       } catch (error) {
         console.error('Failed to load player stats:', error);
       }
     }
+    
+    // Mark as initialized to prevent achievement checks on initial load
+    setIsInitialized(true);
   }, []);
 
   // Save achievements when they change
@@ -97,7 +107,7 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
   };
 
-  const getAchievementProgress = (achievement: Achievement): number => {
+  const getAchievementProgress = useCallback((achievement: Achievement): number => {
     const req = achievement.requirement;
     
     switch (req.type) {
@@ -122,13 +132,18 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       default:
         return 0;
     }
-  };
+  }, [playerStats]);
 
-  const isAchievementUnlocked = (achievementId: string): boolean => {
+  const isAchievementUnlocked = useCallback((achievementId: string): boolean => {
     return unlockedAchievements.some(a => a.id === achievementId);
-  };
+  }, [unlockedAchievements]);
 
-  const checkAchievements = (): Achievement[] => {
+  const checkAchievements = useCallback((): Achievement[] => {
+    // Don't check achievements if not initialized yet (on first load)
+    if (!isInitialized) {
+      return [];
+    }
+
     const newlyUnlocked: Achievement[] = [];
 
     for (const achievement of achievementsData) {
@@ -142,15 +157,40 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const unlockedAchievement: UnlockedAchievement = {
           ...achievement,
           unlockedAt: new Date(),
-          progress: 100
+          progress: 100,
+          seen: false
         };
 
         setUnlockedAchievements(prev => [...prev, unlockedAchievement]);
         newlyUnlocked.push(achievement);
+        
+        // Add achievement points to stats (but not to game score)
+        if (achievement.reward.points) {
+          addAchievementPoints(achievement.reward.points);
+        }
       }
     }
 
     return newlyUnlocked;
+  }, [isInitialized, isAchievementUnlocked, getAchievementProgress]);
+
+  const markAchievementsAsSeen = () => {
+    setUnlockedAchievements(prev => 
+      prev.map(achievement => ({ ...achievement, seen: true }))
+    );
+  };
+
+  const getUnseenAchievements = (): UnlockedAchievement[] => {
+    return unlockedAchievements.filter(achievement => !achievement.seen);
+  };
+
+  const addAchievementPoints = (points: number) => {
+    // Achievement points are tracked separately from game score
+    // They contribute to total_score in player stats but not to game score
+    setPlayerStats(prev => ({
+      ...prev,
+      total_score: prev.total_score + points
+    }));
   };
 
   const resetAllProgress = () => {
@@ -179,7 +219,10 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     updatePlayerStats,
     getAchievementProgress,
     isAchievementUnlocked,
-    resetAllProgress
+    resetAllProgress,
+    markAchievementsAsSeen,
+    getUnseenAchievements,
+    addAchievementPoints
   };
 
   return (

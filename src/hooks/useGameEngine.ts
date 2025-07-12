@@ -102,15 +102,22 @@ export const useGameEngine = () => {
     const isCorrect = normalize(code) === normalize(challenge.expectedCode);
 
     if (isCorrect) {
-      const points = 100 + gameState.streak * 10;
-      const newScore = gameState.score + points;
+      // Base points calculation
+      const basePoints = 100;
+      const streakBonus = gameState.streak * 10;
+      
+      // NEW: Streak multiplier - divide streak by 10 and add to base multiplier of 1
+      const streakMultiplier = 1 + (gameState.streak / 10);
+      const totalPoints = Math.floor((basePoints + streakBonus) * streakMultiplier);
+      
+      const newScore = gameState.score + totalPoints;
       const newChallengeIndex = gameState.currentChallenge + 1;
 
       setGameState(prev => ({
         ...prev,
         score: newScore,
         streak: prev.streak + 1,
-        feedback: `Perfect! +${points} points`,
+        feedback: `Perfect! +${totalPoints} points (${streakMultiplier.toFixed(1)}x streak multiplier)`,
         showFeedback: true,
         attempts: 0  // Reset attempts on success
       }));

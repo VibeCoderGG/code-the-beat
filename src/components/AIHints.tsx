@@ -64,17 +64,6 @@ export const AIHints: React.FC<AIHintsProps> = ({
       });
     }
 
-    // Syntax hints based on common patterns
-    if (currentChallenge.expectedCode.includes('let ') || currentChallenge.expectedCode.includes('const ')) {
-      hints.push({
-        type: 'syntax',
-        title: 'Variable Declaration',
-        content: 'Use "let" for variables that change, "const" for constants. Remember the syntax: let variableName = value;',
-        icon: Code,
-        color: 'text-green-400'
-      });
-    }
-
     if (currentChallenge.expectedCode.includes('function')) {
       hints.push({
         type: 'syntax',
@@ -163,9 +152,6 @@ export const AIHints: React.FC<AIHintsProps> = ({
             </div>
             <div>
               <h3 className="font-semibold text-white">{currentHint.title}</h3>
-              <span className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 ${currentHint.color} font-medium`}>
-                AI Hint
-              </span>
             </div>
           </div>
           <button

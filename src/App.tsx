@@ -23,6 +23,20 @@ function App() {
   const [showDashboard, setShowDashboard] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
+  const [shownAchievements, setShownAchievements] = useState<Set<string>>(new Set());
+
+  // Load shown achievements from localStorage on mount
+  useEffect(() => {
+    const savedShownAchievements = localStorage.getItem('shownAchievements');
+    if (savedShownAchievements) {
+      try {
+        const achievementIds = JSON.parse(savedShownAchievements);
+        setShownAchievements(new Set(achievementIds));
+      } catch (error) {
+        console.error('Failed to load shown achievements:', error);
+      }
+    }
+  }, []);
   
   const {
     gameState,
@@ -44,7 +58,9 @@ function App() {
     checkAchievements, 
     playerStats,
     unlockedAchievements,
-    resetAllProgress
+    resetAllProgress,
+    markAchievementsAsSeen,
+    getUnseenAchievements
   } = useAchievements();
 
   // Update player stats when game state changes
@@ -57,12 +73,24 @@ function App() {
       languages_used: [selectedLanguage]
     });
 
-    // Check for new achievements
-    const newAchievements = checkAchievements();
-    if (newAchievements.length > 0) {
-      setNewAchievement(newAchievements[0]); // Show first new achievement
+    // Check for achievements when meaningful game progress happens
+    if (gameState.score > 0 || gameState.currentLevel > 0 || gameState.currentChallenge > 0) {
+      const newAchievements = checkAchievements();
+      if (newAchievements.length > 0) {
+        const achievement = newAchievements[0];
+        
+        // Show achievement notification only if not shown before
+        if (!shownAchievements.has(achievement.id)) {
+          setNewAchievement(achievement);
+          const newShownSet = new Set([...shownAchievements, achievement.id]);
+          setShownAchievements(newShownSet);
+          
+          // Save to localStorage
+          localStorage.setItem('shownAchievements', JSON.stringify([...newShownSet]));
+        }
+      }
     }
-  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, selectedLanguage, updatePlayerStats, checkAchievements]);
+  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, selectedLanguage, updatePlayerStats, checkAchievements, shownAchievements]);
 
   const handleScoreSubmitted = () => {
     setShowScoreSubmission(false);
@@ -87,6 +115,10 @@ function App() {
       if (resetSuccess) {
         // Reset achievements and player stats
         resetAllProgress();
+        
+        // Clear shown achievements
+        setShownAchievements(new Set());
+        localStorage.removeItem('shownAchievements');
         
         // Show success alert
         alert("✅ Game successfully reset!\n\nAll progress, achievements, and statistics have been cleared.\nYou're back to Level 1 with a fresh start!");
@@ -314,14 +346,18 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowDashboard(true)}
+                onClick={() => {
+                  setShowDashboard(true);
+                  // Mark all achievements as seen when dashboard is opened
+                  markAchievementsAsSeen();
+                }}
                 className="flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-4 py-2 rounded-xl transition-all duration-200 relative"
               >
                 <Award className="w-4 h-4" />
                 <span className="font-medium">Dashboard</span>
-                {unlockedAchievements.length > 0 && (
+                {getUnseenAchievements().length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {unlockedAchievements.length}
+                    {getUnseenAchievements().length}
                   </span>
                 )}
               </motion.button>
@@ -431,3 +467,6 @@ function App() {
 }
 
 export default App;
+
+
+// as i tested teh websitee achivements points are not getting added to teh points i have chck that and also achivements are shown everytime i wisit tehe website can u fix that too and also once i go to dashboard and click the achivment i have recievd will rmove notification/unread achivents (number  apeires on dashboard button ) will disappeirs

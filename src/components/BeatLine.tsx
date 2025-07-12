@@ -14,6 +14,14 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Calculate points that will be awarded for solving this question
+  const calculatePotentialPoints = () => {
+    const basePoints = 100;
+    const streakBonus = gameState.streak * 10;
+    const streakMultiplier = 1 + (gameState.streak / 10);
+    return Math.floor((basePoints + streakBonus) * streakMultiplier);
+  };
+
   useEffect(() => {
     if (currentLevel.challenges[gameState.currentChallenge]) {
       setCurrentPrompt(currentLevel.challenges[gameState.currentChallenge].prompt);
@@ -115,7 +123,19 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
                 <Target className="w-5 h-5 text-blue-400" />
               </div>
               <div className="flex-1">
-                <div className="text-sm text-blue-300 dark:text-blue-300 light:text-indigo-600 mb-2 font-medium">Your Mission:</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-blue-300 dark:text-blue-300 light:text-indigo-600 font-medium">Your Mission:</div>
+                  <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg px-3 py-1">
+                    <span className="text-green-400 text-sm font-bold">
+                      +{calculatePotentialPoints()} points
+                    </span>
+                    {gameState.streak > 0 && (
+                      <span className="text-xs text-green-300 ml-2">
+                        ({(1 + (gameState.streak / 10)).toFixed(1)}x multiplier)
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <div className="text-white dark:text-white light:text-slate-800 text-lg font-medium leading-relaxed">
                   {currentPrompt}
                 </div>
