@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Award, Crown, User, Star, RefreshCw, ChevronUp, ChevronDown, Target } from 'lucide-react';
-import { getLeaderboardByLevel, LeaderboardEntry } from '../lib/supabase';
+import { getLeaderboardByLevel, LeaderboardEntry, isSupabaseAvailable } from '../lib/supabase';
 import { levels } from '../data/levels';
 
 interface AllLevelsLeaderboardProps {
@@ -23,6 +23,12 @@ export const AllLevelsLeaderboard: React.FC<AllLevelsLeaderboardProps> = ({ curr
   const fetchLevelLeaderboard = async (levelId: number) => {
     try {
       setLoading(prev => ({ ...prev, [levelId]: true }));
+      
+      if (!isSupabaseAvailable) {
+        setLeaderboards(prev => ({ ...prev, [levelId]: [] }));
+        return;
+      }
+      
       const data = await getLeaderboardByLevel(levelId, 3);
       setLeaderboards(prev => ({ ...prev, [levelId]: data || [] }));
     } catch (error) {

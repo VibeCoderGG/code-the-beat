@@ -190,6 +190,17 @@ src/
 
 ## 🚀 Deployment
 
+### Environment Variables (Optional)
+
+For leaderboard functionality, you can set up Supabase:
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Set up environment variables:
+   - `VITE_SUPABASE_URL`: Your Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY`: Your Supabase anon key
+
+**Note**: The application works perfectly without these environment variables - the leaderboard features will simply be disabled.
+
 ### Build for Production
 ```bash
 npm run build
@@ -208,6 +219,12 @@ npm i -g vercel
 # Deploy
 vercel
 ```
+
+### Manual Deployment
+
+1. Build the application: `npm run build`
+2. Deploy the `dist` folder to your hosting service
+3. (Optional) Add environment variables for leaderboard functionality
 
 ## 🤝 Contributing
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Award, Crown, X, User, Star } from 'lucide-react';
-import { getLeaderboard, LeaderboardEntry } from '../lib/supabase';
+import { getLeaderboard, LeaderboardEntry, isSupabaseAvailable } from '../lib/supabase';
 
 interface LeaderboardProps {
   isOpen: boolean;
@@ -23,6 +23,13 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ isOpen, onClose }) => 
     try {
       setLoading(true);
       setError(null);
+      
+      if (!isSupabaseAvailable) {
+        setError('Leaderboard is currently unavailable');
+        setEntries([]);
+        return;
+      }
+      
       const data = await getLeaderboard(20);
       setEntries(data || []);
     } catch (err) {

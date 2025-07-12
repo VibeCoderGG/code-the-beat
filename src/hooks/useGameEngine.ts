@@ -74,7 +74,15 @@ export const useGameEngine = () => {
 
   const startGame = useCallback(async () => {
     try {
-      if (Tone.context.state !== 'running') await Tone.start();
+      // Only start Tone.js if it's not already running and user has interacted
+      if (Tone.context.state !== 'running') {
+        try {
+          await Tone.start();
+        } catch (error) {
+          console.warn('AudioContext not allowed yet, will start without audio:', error);
+          // Continue without audio for now
+        }
+      }
 
       setGameState(prev => ({ ...prev, isPlaying: true, beatCount: 0 }));
 
@@ -84,10 +92,15 @@ export const useGameEngine = () => {
           ...prev,
           beatCount: prev.beatCount + 1
         }));
-        synthRef.current?.triggerAttackRelease('C4', '8n');
+        // Only play sound if Tone.js is running
+        if (Tone.context.state === 'running') {
+          synthRef.current?.triggerAttackRelease('C4', '8n');
+        }
       }, beatInterval);
     } catch (error) {
-      console.error('Failed to start Tone.js:', error);
+      console.error('Failed to start game:', error);
+      // Continue without audio
+      setGameState(prev => ({ ...prev, isPlaying: true, beatCount: 0 }));
     }
   }, [currentLevel.tempo]);
 
