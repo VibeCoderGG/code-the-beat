@@ -58,7 +58,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: Code2,
       color: 'text-blue-400',
       bgColor: 'bg-blue-500/20 border-blue-500/30',
-      position: { x: 1, y: 0 },
+      position: { x: 2, y: 0 },
       prerequisites: [],
       requiredChallenges: 5,
       requiredScore: 500,
@@ -73,7 +73,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: Zap,
       color: 'text-yellow-400',
       bgColor: 'bg-yellow-500/20 border-yellow-500/30',
-      position: { x: 0, y: 1 },
+      position: { x: 1, y: 1 },
       prerequisites: ['basics'],
       requiredChallenges: 15,
       requiredScore: 1500,
@@ -87,12 +87,27 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: Target,
       color: 'text-green-400',
       bgColor: 'bg-green-500/20 border-green-500/30',
-      position: { x: 2, y: 1 },
+      position: { x: 3, y: 1 },
       prerequisites: ['basics'],
       requiredChallenges: 15,
       requiredScore: 1500,
       unlocked: playerStats.challenges_completed >= 15 && playerStats.challenges_completed >= 5,
       mastered: playerStats.perfect_submissions >= 10
+    },
+    {
+      id: 'progression_unlock',
+      name: 'Level Progression',
+      description: 'Unlock levels by completing previous challenges',
+      icon: Lock,
+      color: 'text-violet-400',
+      bgColor: 'bg-violet-500/20 border-violet-500/30',
+      position: { x: 2, y: 1.5 },
+      prerequisites: ['basics'],
+      requiredChallenges: 10,
+      requiredScore: 1000,
+      unlocked: levelsUnlocked >= 2,
+      mastered: levelsUnlocked >= 4,
+      progressionRelated: true
     },
     {
       id: 'checkpoint_master',
@@ -101,7 +116,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: Undo,
       color: 'text-orange-400',
       bgColor: 'bg-orange-500/20 border-orange-500/30',
-      position: { x: 0, y: 2 },
+      position: { x: 0.5, y: 2 },
       prerequisites: ['speed'],
       requiredChallenges: 20,
       requiredScore: 2000,
@@ -117,7 +132,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: Shield,
       color: 'text-cyan-400',
       bgColor: 'bg-cyan-500/20 border-cyan-500/30',
-      position: { x: 2, y: 2 },
+      position: { x: 3.5, y: 2 },
       prerequisites: ['accuracy'],
       requiredChallenges: 20,
       requiredScore: 2000,
@@ -126,28 +141,13 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       penaltyRelated: true
     },
     {
-      id: 'progression_unlock',
-      name: 'Level Progression',
-      description: 'Unlock levels by completing previous challenges',
-      icon: Lock,
-      color: 'text-violet-400',
-      bgColor: 'bg-violet-500/20 border-violet-500/30',
-      position: { x: 1, y: 1.5 },
-      prerequisites: ['basics'],
-      requiredChallenges: 10,
-      requiredScore: 1000,
-      unlocked: levelsUnlocked >= 2,
-      mastered: levelsUnlocked >= 4,
-      progressionRelated: true
-    },
-    {
       id: 'rhythm_master',
       name: 'Rhythm Master',
       description: 'Perfect synchronization with the beat',
       icon: Star,
       color: 'text-purple-400',
       bgColor: 'bg-purple-500/20 border-purple-500/30',
-      position: { x: 1, y: 2 },
+      position: { x: 2, y: 2.5 },
       prerequisites: ['checkpoint_master', 'penalty_resilience', 'progression_unlock'],
       requiredChallenges: 25,
       requiredScore: 3000,
@@ -161,7 +161,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: Brain,
       color: 'text-indigo-400',
       bgColor: 'bg-indigo-500/20 border-indigo-500/30',
-      position: { x: 0, y: 3 },
+      position: { x: 1, y: 3 },
       prerequisites: ['checkpoint_master'],
       requiredChallenges: 30,
       requiredScore: 4000,
@@ -177,7 +177,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: RotateCcw,
       color: 'text-rose-400',
       bgColor: 'bg-rose-500/20 border-rose-500/30',
-      position: { x: 2, y: 3 },
+      position: { x: 3, y: 3 },
       prerequisites: ['penalty_resilience'],
       requiredChallenges: 30,
       requiredScore: 4000,
@@ -192,7 +192,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: TrendingUp,
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/20 border-emerald-500/30',
-      position: { x: 1, y: 3.5 },
+      position: { x: 2, y: 3.5 },
       prerequisites: ['adaptive_learner', 'reset_strategist'],
       requiredChallenges: 40,
       requiredScore: 6000,
@@ -208,7 +208,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
       icon: Award,
       color: 'text-amber-400',
       bgColor: 'bg-amber-500/20 border-amber-500/30',
-      position: { x: 1, y: 4 },
+      position: { x: 2, y: 4 },
       prerequisites: ['rhythm_master', 'score_optimizer'],
       requiredChallenges: 50,
       requiredScore: 10000,
@@ -240,18 +240,18 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
   };
 
   const renderConnection = (from: SkillNode, to: SkillNode) => {
-    // Calculate positions based on a centered grid
-    const containerWidth = 500; // Fixed container width
+    // Calculate positions based on a centered grid with improved spacing
+    const containerWidth = 600; // Increased container width for better spacing
     const containerHeight = 500; // Fixed container height
     
-    // Create a centered grid where (1,2) is the center
+    // Create a centered grid where (2,2) is the center
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
-    const gridSpacing = 100;
+    const gridSpacing = 120; // Increased spacing for better alignment
     
-    const fromX = centerX + (from.position.x - 1) * gridSpacing;
-    const fromY = centerY + (from.position.y - 2) * gridSpacing; // Offset to center vertically
-    const toX = centerX + (to.position.x - 1) * gridSpacing;
+    const fromX = centerX + (from.position.x - 2) * gridSpacing;
+    const fromY = centerY + (from.position.y - 2) * gridSpacing;
+    const toX = centerX + (to.position.x - 2) * gridSpacing;
     const toY = centerY + (to.position.y - 2) * gridSpacing;
 
     const isUnlocked = to.unlocked;
@@ -345,7 +345,7 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
 
       <div className="relative bg-black/10 dark:bg-black/10 light:bg-white/30 rounded-xl p-4 h-[550px] flex items-center justify-center overflow-hidden">
         {/* Skill Tree Container */}
-        <div className="relative w-[500px] h-[500px]">
+        <div className="relative w-[600px] h-[500px]">
 
         {/* Connections */}
         <div className="absolute inset-0">
@@ -364,14 +364,14 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
             const state = getNodeState(node);
             const nodeSize = 80;
             
-            // Calculate position using the same centered grid system
-            const containerWidth = 500;
+            // Calculate position using improved centered grid system
+            const containerWidth = 600;
             const containerHeight = 500;
             const centerX = containerWidth / 2;
             const centerY = containerHeight / 2;
-            const gridSpacing = 100;
+            const gridSpacing = 120; // Increased spacing for better alignment
             
-            const nodeX = centerX + (node.position.x - 1) * gridSpacing - (nodeSize / 2);
+            const nodeX = centerX + (node.position.x - 2) * gridSpacing - (nodeSize / 2);
             const nodeY = centerY + (node.position.y - 2) * gridSpacing - (nodeSize / 2);
 
             return (
