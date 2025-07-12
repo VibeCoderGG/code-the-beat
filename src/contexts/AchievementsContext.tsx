@@ -13,6 +13,7 @@ interface AchievementsContextType {
   playerStats: PlayerStats;
   checkAchievements: () => Achievement[];
   updatePlayerStats: (stats: Partial<PlayerStats>) => void;
+  updateGameScore: (gameScore: number) => void; // New function for game score
   getAchievementProgress: (achievement: Achievement) => number;
   isAchievementUnlocked: (achievementId: string) => boolean;
   resetAllProgress: () => void;
@@ -30,6 +31,8 @@ const STATS_STORAGE_KEY = 'codeBeatPlayerStats';
 
 export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievement[]>([]);
+  const [achievementPoints, setAchievementPoints] = useState<number>(0); // Track achievement points separately
+  const [baseGameScore, setBaseGameScore] = useState<number>(0); // Track base game score separately
   const [playerStats, setPlayerStats] = useState<PlayerStats>({
     challenges_completed: 0,
     levels_completed: 0,
@@ -46,6 +49,8 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     const savedAchievements = localStorage.getItem(STORAGE_KEY);
     const savedStats = localStorage.getItem(STATS_STORAGE_KEY);
+    const savedAchievementPoints = localStorage.getItem('codeBeatAchievementPoints');
+    const savedBaseGameScore = localStorage.getItem('codeBeatBaseGameScore');
 
     if (savedAchievements) {
       try {
@@ -68,6 +73,24 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         console.error('Failed to load player stats:', error);
       }
     }
+
+    if (savedAchievementPoints) {
+      try {
+        const points = JSON.parse(savedAchievementPoints);
+        setAchievementPoints(points);
+      } catch (error) {
+        console.error('Failed to load achievement points:', error);
+      }
+    }
+
+    if (savedBaseGameScore) {
+      try {
+        const score = JSON.parse(savedBaseGameScore);
+        setBaseGameScore(score);
+      } catch (error) {
+        console.error('Failed to load base game score:', error);
+      }
+    }
     
     // Mark as initialized to prevent achievement checks on initial load
     setIsInitialized(true);
@@ -83,13 +106,33 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(playerStats));
   }, [playerStats]);
 
+  // Save achievement points when they change
+  useEffect(() => {
+    localStorage.setItem('codeBeatAchievementPoints', JSON.stringify(achievementPoints));
+  }, [achievementPoints]);
+
+  // Save base game score when it changes
+  useEffect(() => {
+    localStorage.setItem('codeBeatBaseGameScore', JSON.stringify(baseGameScore));
+  }, [baseGameScore]);
+
+  // Update total score when achievement points change
+  useEffect(() => {
+    if (isInitialized) {
+      setPlayerStats(prev => ({
+        ...prev,
+        total_score: baseGameScore + achievementPoints
+      }));
+    }
+  }, [achievementPoints, baseGameScore, isInitialized]);
+
   const updatePlayerStats = (newStats: Partial<PlayerStats>) => {
     setPlayerStats((prev: PlayerStats) => {
       const updated = { ...prev, ...newStats };
       
-      // Update max streak if current is higher
-      if (newStats.max_streak !== undefined && newStats.max_streak > prev.max_streak) {
-        updated.max_streak = newStats.max_streak;
+      // Update max streak if current is higher or if explicitly set
+      if (newStats.max_streak !== undefined) {
+        updated.max_streak = Math.max(prev.max_streak, newStats.max_streak);
       }
       
       // Merge special counters
@@ -118,6 +161,8 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       case 'total_score':
         return Math.min(100, (playerStats.total_score / req.value) * 100);
       case 'max_streak':
+        return Math.min(100, (playerStats.max_streak / req.value) * 100);
+      case 'streak': // Handle both 'streak' and 'max_streak' for backwards compatibility
         return Math.min(100, (playerStats.max_streak / req.value) * 100);
       case 'perfect_submissions':
         return Math.min(100, (playerStats.perfect_submissions / req.value) * 100);
@@ -185,17 +230,26 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const addAchievementPoints = (points: number) => {
-    // Achievement points are tracked separately from game score
-    // They contribute to total_score in player stats but not to game score
+    // Only add to achievement points tracker, don't modify total_score directly
+    setAchievementPoints(prev => prev + points);
+  };
+
+  const updateGameScore = (gameScore: number) => {
+    // Update the base game score
+    setBaseGameScore(gameScore);
+    
+    // Update the total score to be base game score plus achievement points
     setPlayerStats(prev => ({
       ...prev,
-      total_score: prev.total_score + points
+      total_score: gameScore + achievementPoints
     }));
   };
 
   const resetAllProgress = () => {
     // Reset all state to initial values
     setUnlockedAchievements([]);
+    setAchievementPoints(0);
+    setBaseGameScore(0);
     setPlayerStats({
       challenges_completed: 0,
       levels_completed: 0,
@@ -210,6 +264,8 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Clear localStorage
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STATS_STORAGE_KEY);
+    localStorage.removeItem('codeBeatAchievementPoints');
+    localStorage.removeItem('codeBeatBaseGameScore');
   };
 
   const value: AchievementsContextType = {
@@ -217,6 +273,7 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     playerStats,
     checkAchievements,
     updatePlayerStats,
+    updateGameScore,
     getAchievementProgress,
     isAchievementUnlocked,
     resetAllProgress,

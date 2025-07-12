@@ -24,6 +24,7 @@ function App() {
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
   const [shownAchievements, setShownAchievements] = useState<Set<string>>(new Set());
+  const [showAchievementBonus, setShowAchievementBonus] = useState(false);
 
   // Load shown achievements from localStorage on mount
   useEffect(() => {
@@ -60,15 +61,19 @@ function App() {
     unlockedAchievements,
     resetAllProgress,
     markAchievementsAsSeen,
-    getUnseenAchievements
+    getUnseenAchievements,
+    addAchievementPoints,
+    updateGameScore
   } = useAchievements();
 
   // Update player stats when game state changes
   useEffect(() => {
+    // Update game score in achievements context
+    updateGameScore(gameState.score);
+    
     updatePlayerStats({
       challenges_completed: gameState.currentChallenge + (gameState.currentLevel * 3),
       levels_completed: gameState.currentLevel,
-      total_score: gameState.score,
       max_streak: gameState.streak,
       languages_used: [selectedLanguage]
     });
@@ -87,10 +92,21 @@ function App() {
           
           // Save to localStorage
           localStorage.setItem('shownAchievements', JSON.stringify([...newShownSet]));
+          
+          // Add achievement points
+          addAchievementPoints(achievement.reward.points);
+          
+          // Show achievement bonus indicator
+          setShowAchievementBonus(true);
+          
+          // Hide achievement bonus indicator after 1 second
+          setTimeout(() => {
+            setShowAchievementBonus(false);
+          }, 1000);
         }
       }
     }
-  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, selectedLanguage, updatePlayerStats, checkAchievements, shownAchievements]);
+  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, selectedLanguage, updatePlayerStats, updateGameScore, checkAchievements, shownAchievements, addAchievementPoints]);
 
   const handleScoreSubmitted = () => {
     setShowScoreSubmission(false);
@@ -172,8 +188,11 @@ function App() {
               <div className="bg-black/30 dark:bg-black/30 light:bg-white/70 backdrop-blur-sm border border-white/10 dark:border-white/10 light:border-indigo-200/50 rounded-xl px-4 py-2">
                 <div className="flex items-center space-x-2">
                   <Star className="w-4 h-4 text-yellow-400" />
-                  <span className="font-bold text-lg text-white dark:text-white light:text-slate-800">{gameState.score.toLocaleString()}</span>
+                  <span className="font-bold text-lg text-white dark:text-white light:text-slate-800">{playerStats.total_score.toLocaleString()}</span>
                   <span className="text-xs text-gray-400 dark:text-gray-400 light:text-slate-600">pts</span>
+                  {playerStats.total_score > gameState.score && showAchievementBonus && (
+                    <span className="text-xs text-green-400">+{(playerStats.total_score - gameState.score).toLocaleString()} from achievements</span>
+                  )}
                 </div>
               </div>
 
@@ -372,7 +391,7 @@ function App() {
                 <span className="font-medium">Leaderboard</span>
               </motion.button>
               
-              {gameState.score > 0 && (
+              {playerStats.total_score > 0 && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -420,7 +439,7 @@ function App() {
           <ScoreSubmission
             isOpen={showScoreSubmission}
             onClose={() => setShowScoreSubmission(false)}
-            score={gameState.score}
+            score={playerStats.total_score}
             levelReached={gameState.currentLevel + 1}
             challengesCompleted={gameState.currentChallenge + (gameState.currentLevel * 3)}
             onSubmitted={handleScoreSubmitted}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, X } from 'lucide-react';
 import { Achievement } from '../types/game';
@@ -13,6 +13,17 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
   achievement, 
   onClose 
 }) => {
+  // Auto-close after 1 second
+  useEffect(() => {
+    if (achievement) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 1000); // 1 second
+
+      return () => clearTimeout(timer);
+    }
+  }, [achievement, onClose]);
+
   if (!achievement) return null;
 
   const rarityColor = getRarityColor(achievement.rarity);

@@ -47,8 +47,30 @@ export const ScoreSubmission: React.FC<ScoreSubmissionProps> = ({
       setError(null);
       
       if (!isSupabaseAvailable) {
-        // If Supabase is not available, still allow the user to "submit"
-        // but show a message that scores are stored locally
+        // If Supabase is not available, save to local storage
+        const localEntry = {
+          id: Date.now(),
+          player_name: playerName.trim(),
+          score,
+          level_reached: levelReached,
+          challenges_completed: challengesCompleted,
+          created_at: new Date().toISOString()
+        };
+        
+        // Get existing local scores
+        const existingScores = localStorage.getItem('localLeaderboard');
+        let localScores = existingScores ? JSON.parse(existingScores) : [];
+        
+        // Add new score
+        localScores.push(localEntry);
+        
+        // Sort by score (descending) and keep top 20
+        localScores.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+        localScores = localScores.slice(0, 20);
+        
+        // Save back to localStorage
+        localStorage.setItem('localLeaderboard', JSON.stringify(localScores));
+        
         setError('Score saved locally - Online leaderboard unavailable');
         setTimeout(() => {
           onSubmitted();
