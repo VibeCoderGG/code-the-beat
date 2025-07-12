@@ -57,7 +57,7 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
                   </div>
                 </div>
                 <div className="mt-2 text-xs text-gray-300">
-                  +{achievement.reward.points} points
+                  +{Math.floor(achievement.reward.points / 2)} points
                   {achievement.reward.title && (
                     <span className="ml-2 px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded">
                       {achievement.reward.title}

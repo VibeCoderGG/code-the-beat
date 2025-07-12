@@ -230,8 +230,9 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const addAchievementPoints = (points: number) => {
-    // Only add to achievement points tracker, don't modify total_score directly
-    setAchievementPoints(prev => prev + points);
+    // Divide achievement points by 2 before adding them
+    const adjustedPoints = Math.floor(points / 2);
+    setAchievementPoints(prev => prev + adjustedPoints);
   };
 
   const updateGameScore = (gameScore: number) => {
