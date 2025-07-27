@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Lightbulb, Code, Terminal, CheckCircle, XCircle } from 'lucide-react';
-import { GameState, Level } from '../types/game';
+import { Send, Lightbulb, Code, Terminal, CheckCircle, XCircle, SkipForward } from 'lucide-react';
+import { GameState, Level, Challenge } from '../types/game';
 import { AIHints } from './AIHints';
 
 interface CodeInputProps {
@@ -10,6 +10,8 @@ interface CodeInputProps {
   selectedLanguage: string;
   onSubmitCode: (code: string) => void;
   onUpdateCode: (code: string) => void;
+  onSkipQuestion?: () => void;
+  getCurrentChallenge?: () => Challenge;
 }
 
 export const CodeInput: React.FC<CodeInputProps> = ({
@@ -17,11 +19,17 @@ export const CodeInput: React.FC<CodeInputProps> = ({
   currentLevel,
   selectedLanguage,
   onSubmitCode,
-  onUpdateCode
+  onUpdateCode,
+  onSkipQuestion,
+  getCurrentChallenge
 }) => {
   const [showHint, setShowHint] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(1);
-  const currentChallenge = currentLevel.challenges[gameState.currentChallenge];
+  
+  // Get current challenge using randomized order if available
+  const currentChallenge = getCurrentChallenge 
+    ? getCurrentChallenge() 
+    : currentLevel.challenges[gameState.currentChallenge];
 
   useEffect(() => {
     onUpdateCode('');
@@ -72,7 +80,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowHint(!showHint)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+            className={`hint-button flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
               showHint 
                 ? 'bg-yellow-500/30 border border-yellow-500/50 text-yellow-300' 
                 : 'bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-400'
@@ -81,6 +89,18 @@ export const CodeInput: React.FC<CodeInputProps> = ({
             <Lightbulb className="w-4 h-4" />
             <span className="font-medium">Hint</span>
           </motion.button>
+          
+          {onSkipQuestion && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onSkipQuestion}
+              className="skip-button flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 font-medium bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400"
+            >
+              <SkipForward className="w-4 h-4" />
+              <span>Skip</span>
+            </motion.button>
+          )}
           
           <motion.button
             whileHover={{ scale: 1.05 }}

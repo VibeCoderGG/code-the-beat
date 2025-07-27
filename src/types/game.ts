@@ -16,6 +16,14 @@ export interface Challenge {
   hints: string[];
   beatPosition: number;
   timeSignature: number;
+  language: string; // Programming language for this challenge
+}
+
+export interface LanguageOption {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
 }
 
 export interface GameState {
@@ -29,6 +37,7 @@ export interface GameState {
   feedback: string;
   showFeedback: boolean;
   attempts: number;
+  solvedQuestions: number; // Track total solved questions across all levels
 }
 
 export interface BeatIndicator {

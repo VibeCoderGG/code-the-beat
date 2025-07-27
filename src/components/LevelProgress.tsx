@@ -1,21 +1,31 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Star, Target } from 'lucide-react';
+import { Star, Target, Unlock } from 'lucide-react';
 import { GameState, Level } from '../types/game';
 
 interface LevelProgressProps {
   gameState: GameState;
   currentLevel: Level;
   levels: Level[];
+  getUnlockProgress?: () => {
+    questionsToNextUnlock: number;
+    nextLevelToUnlock: number | null;
+    totalQuestionsAnswered: number;
+    progressPercentage: number;
+  };
 }
 
 export const LevelProgress: React.FC<LevelProgressProps> = ({
   gameState,
   currentLevel,
-  levels
+  levels,
+  getUnlockProgress
 }) => {
   const challengeProgress = ((gameState.currentChallenge + 1) / currentLevel.challenges.length) * 100;
   const overallProgress = ((gameState.currentLevel + (gameState.currentChallenge + 1) / currentLevel.challenges.length) / levels.length) * 100;
+  
+  // Get unlock progress if function is provided
+  const unlockProgress = getUnlockProgress ? getUnlockProgress() : null;
 
   return (
     <div className="flex items-center space-x-4">
@@ -36,6 +46,29 @@ export const LevelProgress: React.FC<LevelProgressProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Level Unlock Progress */}
+      {unlockProgress && unlockProgress.nextLevelToUnlock && (
+        <div className="flex items-center space-x-2">
+          <Unlock className="w-4 h-4 text-green-400" />
+          <div className="flex flex-col">
+            <span className="text-xs text-gray-400 dark:text-gray-400 light:text-slate-600">
+              {unlockProgress.questionsToNextUnlock > 0 
+                ? `${unlockProgress.questionsToNextUnlock} questions to unlock Level ${unlockProgress.nextLevelToUnlock}`
+                : `Level ${unlockProgress.nextLevelToUnlock} unlocked!`
+              }
+            </span>
+            <div className="w-28 bg-gray-800/50 dark:bg-gray-800/50 light:bg-gray-200/50 rounded-full h-2 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${unlockProgress.progressPercentage}%` }}
+                transition={{ duration: 0.5 }}
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overall Progress */}
       <div className="flex items-center space-x-2">

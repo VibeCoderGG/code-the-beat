@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Tone from 'tone';
-import { GameState, Level } from '../types/game';
-import { levels } from '../data/levels';
+import { GameState, Level, Challenge } from '../types/game';
+import { enhancedMultiLanguageLevels, getChallengesForLanguageWithAST } from '../data/enhancedMultiLanguageLevels';
+import { PatternValidator } from '../utils/patternValidation';
 import { saveLocalPlayer, getLocalPlayer } from "../utils/storage";
 import { getOrCreatePlayerName } from "../utils/player";
 
-export const useGameEngine = () => {
+export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
   const [gameState, setGameState] = useState<GameState>({
     currentLevel: 0,
     currentChallenge: 0,
@@ -20,14 +21,27 @@ export const useGameEngine = () => {
     solvedQuestions: 0
   });
 
-  const [currentLevel, setCurrentLevel] = useState<Level>(levels[0]);
-  const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]); // Track unlocked levels
-  const [levelCheckpoints, setLevelCheckpoints] = useState<{[levelId: number]: number}>({ 1: 0 }); // Track score at start of each level
-  const [randomizedChallengeOrders, setRandomizedChallengeOrders] = useState<{[levelId: number]: number[]}>({});
+  const [currentLevel, setCurrentLevel] = useState<Level>(enhancedMultiLanguageLevels[0]);
+  const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]);
+  const [levelCheckpoints, setLevelCheckpoints] = useState<{[levelId: number]: number}>({ 1: 0 });
+  const [randomizedChallengeOrders, setRandomizedChallengeOrders] = useState<{[key: string]: number[]}>({});
   const synthRef = useRef<Tone.Synth | null>(null);
   const beatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const playerName = getOrCreatePlayerName();
+
+  // Get filtered challenges for current language
+  const getFilteredChallenges = useCallback((level: Level): Challenge[] => {
+    return getChallengesForLanguageWithAST(level, selectedLanguage);
+  }, [selectedLanguage]);
+
+  // Create language-aware levels
+  const languageAwareLevels = useCallback((): Level[] => {
+    return enhancedMultiLanguageLevels.map((level: Level) => ({
+      ...level,
+      challenges: getFilteredChallenges(level)
+    }));
+  }, [getFilteredChallenges]);
 
   // Utility function to shuffle an array using Fisher-Yates algorithm
   const shuffleArray = useCallback((array: number[]): number[] => {
@@ -41,37 +55,45 @@ export const useGameEngine = () => {
 
   // Function to get or create randomized challenge order for a level
   const getRandomizedChallengeOrder = useCallback((levelIndex: number): number[] => {
-    const levelId = levelIndex + 1; // Convert to 1-indexed
+    const levelId = levelIndex + 1;
+    const languageKey = `${levelId}_${selectedLanguage}`;
     
-    if (randomizedChallengeOrders[levelId]) {
-      return randomizedChallengeOrders[levelId];
+    if (randomizedChallengeOrders[languageKey]) {
+      return randomizedChallengeOrders[languageKey];
     }
     
-    // Create array of challenge indices [0, 1, 2, 3, ...]
-    const challengeIndices = Array.from({ length: levels[levelIndex].challenges.length }, (_, i) => i);
+    const currentLangLevel = languageAwareLevels()[levelIndex];
+    const challengeIndices = Array.from({ length: currentLangLevel.challenges.length }, (_, i) => i);
     const shuffled = shuffleArray(challengeIndices);
     
-    // Store the randomized order
     setRandomizedChallengeOrders(prev => ({
       ...prev,
-      [levelId]: shuffled
+      [languageKey]: shuffled
     }));
     
     return shuffled;
-  }, [randomizedChallengeOrders, shuffleArray]);
+  }, [randomizedChallengeOrders, shuffleArray, selectedLanguage, languageAwareLevels]);
 
   // Function to get the current challenge based on randomized order
   const getCurrentChallenge = useCallback(() => {
     const randomOrder = getRandomizedChallengeOrder(gameState.currentLevel);
     const actualChallengeIndex = randomOrder[gameState.currentChallenge];
-    return currentLevel.challenges[actualChallengeIndex];
-  }, [gameState.currentLevel, gameState.currentChallenge, currentLevel.challenges, getRandomizedChallengeOrder]);
+    const currentLangLevel = languageAwareLevels()[gameState.currentLevel];
+    return currentLangLevel.challenges[actualChallengeIndex];
+  }, [gameState.currentLevel, gameState.currentChallenge, getRandomizedChallengeOrder, languageAwareLevels]);
 
-  // ✅ Initialize levels with unlock state and checkpoints
+  // Update current level when language changes
+  useEffect(() => {
+    const langAwareLevels = languageAwareLevels();
+    setCurrentLevel(langAwareLevels[gameState.currentLevel]);
+  }, [selectedLanguage, gameState.currentLevel, languageAwareLevels]);
+
+  // Initialize levels with unlock state and checkpoints
   useEffect(() => {
     const stored = getLocalPlayer();
     if (stored) {
-      // Restore game state
+      const langAwareLevels = languageAwareLevels();
+      
       setGameState(prev => ({
         ...prev,
         score: stored.score,
@@ -79,35 +101,31 @@ export const useGameEngine = () => {
         currentChallenge: stored.challenges_completed,
         solvedQuestions: stored.solvedQuestions || 0
       }));
-      setCurrentLevel(levels[stored.level_reached]);
+      setCurrentLevel(langAwareLevels[stored.level_reached]);
       
-      // Restore unlocked levels
       const unlockedLevelIds = stored.unlockedLevels || [1];
       setUnlockedLevels(unlockedLevelIds);
       
-      // Restore level checkpoints
       const checkpoints = stored.levelCheckpoints || { 1: 0 };
       setLevelCheckpoints(checkpoints);
       
-      // Restore randomized challenge orders
       const randomizedOrders = stored.randomizedOrders || {};
       setRandomizedChallengeOrders(randomizedOrders);
       
-      // Update levels unlock state
-      levels.forEach((level) => {
+      langAwareLevels.forEach((level) => {
         level.unlocked = unlockedLevelIds.includes(level.id);
       });
     } else {
-      // First time playing - only first level unlocked
-      levels.forEach((level, index) => {
+      const langAwareLevels = languageAwareLevels();
+      langAwareLevels.forEach((level, index) => {
         level.unlocked = index === 0;
       });
       setLevelCheckpoints({ 1: 0 });
       setRandomizedChallengeOrders({});
     }
-  }, []);
+  }, [selectedLanguage, languageAwareLevels]);
 
-  // ✅ Setup Tone.js synth
+  // Setup Tone.js synth
   useEffect(() => {
     const synthInstance = new Tone.Synth().toDestination();
     synthRef.current = synthInstance;
@@ -120,13 +138,11 @@ export const useGameEngine = () => {
 
   const startGame = useCallback(async () => {
     try {
-      // Only start Tone.js if it's not already running and user has interacted
       if (Tone.context.state !== 'running') {
         try {
           await Tone.start();
         } catch (error) {
           console.warn('AudioContext not allowed yet, will start without audio:', error);
-          // Continue without audio for now
         }
       }
 
@@ -138,14 +154,12 @@ export const useGameEngine = () => {
           ...prev,
           beatCount: prev.beatCount + 1
         }));
-        // Only play sound if Tone.js is running
         if (Tone.context.state === 'running') {
           synthRef.current?.triggerAttackRelease('C4', '8n');
         }
       }, beatInterval);
     } catch (error) {
       console.error('Failed to start game:', error);
-      // Continue without audio
       setGameState(prev => ({ ...prev, isPlaying: true, beatCount: 0 }));
     }
   }, [currentLevel.tempo]);
@@ -157,15 +171,31 @@ export const useGameEngine = () => {
 
   const submitCode = useCallback((code: string) => {
     const challenge = getCurrentChallenge();
-    const normalize = (str: string) => str.trim().replace(/\s+/g, ' ');
-    const isCorrect = normalize(code) === normalize(challenge.expectedCode);
-
-    if (isCorrect) {
-      // Base points calculation
-      const basePoints = 100;
-      const streakBonus = gameState.streak * 10;
+    
+    // Use pattern validation for all languages
+    let validationResult;
+    
+    // Check if challenge has expected keywords for validation
+    if (challenge.expectedCode) {
+      // Extract potential keywords from the expected code
+      const expectedKeywords = challenge.expectedCode.match(/\b(function|const|let|var|if|for|while|class|def|import|export)\b/g) || [];
       
-      // NEW: Streak multiplier - divide streak by 10 and add to base multiplier of 1
+      if (expectedKeywords.length > 0) {
+        validationResult = PatternValidator.validateChallenge(code, selectedLanguage, { 
+          expectedKeywords: expectedKeywords 
+        });
+      } else {
+        // Fallback to basic pattern validation
+        validationResult = PatternValidator.validateCode(code, selectedLanguage);
+      }
+    } else {
+      // Use basic pattern validation
+      validationResult = PatternValidator.validateCode(code, selectedLanguage);
+    }
+    
+    if (validationResult.isValid) {
+      const basePoints = validationResult.score;
+      const streakBonus = gameState.streak * 10;
       const streakMultiplier = 1 + (gameState.streak / 10);
       const totalPoints = Math.floor((basePoints + streakBonus) * streakMultiplier);
       
@@ -176,30 +206,27 @@ export const useGameEngine = () => {
         ...prev,
         score: newScore,
         streak: prev.streak + 1,
-        solvedQuestions: prev.solvedQuestions + 1, // Increment solved questions count
-        feedback: `Perfect! +${totalPoints} points (${streakMultiplier.toFixed(1)}x streak multiplier)`,
+        solvedQuestions: prev.solvedQuestions + 1,
+        feedback: `${validationResult.feedback} +${totalPoints} points (${streakMultiplier.toFixed(1)}x streak multiplier)`,
         showFeedback: true,
-        attempts: 0  // Reset attempts on success
+        attempts: 0
       }));
 
-      // ✅ Save current progress
       saveLocalPlayer(playerName, newScore, gameState.currentLevel, newChallengeIndex, unlockedLevels, levelCheckpoints, randomizedChallengeOrders, gameState.solvedQuestions + 1);
 
-      // ✅ NEW LOGIC: Check if we should unlock new levels based on total questions answered
-      // Use the solvedQuestions counter (including the one just solved)
+      // Level unlocking logic (every 20 questions)
       const totalQuestionsAnswered = gameState.solvedQuestions + 1;
-      
       const questionsNeededPerLevel = 20;
-      const maxUnlockableLevel = Math.min(Math.floor(totalQuestionsAnswered / questionsNeededPerLevel) + 1, levels.length);
+      const maxUnlockableLevel = Math.min(Math.floor(totalQuestionsAnswered / questionsNeededPerLevel) + 1, enhancedMultiLanguageLevels.length);
       
-      // Update unlocked levels based on questions answered
       const newUnlockedLevels = [...unlockedLevels];
       let levelsUnlocked = false;
       
       for (let levelId = 1; levelId <= maxUnlockableLevel; levelId++) {
-        if (!newUnlockedLevels.includes(levelId) && levelId <= levels.length) {
+        if (!newUnlockedLevels.includes(levelId) && levelId <= enhancedMultiLanguageLevels.length) {
           newUnlockedLevels.push(levelId);
-          levels[levelId - 1].unlocked = true; // levels array is 0-indexed
+          const langAwareLevels = languageAwareLevels();
+          langAwareLevels[levelId - 1].unlocked = true;
           levelsUnlocked = true;
         }
       }
@@ -209,27 +236,23 @@ export const useGameEngine = () => {
       }
 
       setTimeout(() => {
-        // More challenges in current level
         if (gameState.currentChallenge < currentLevel.challenges.length - 1) {
           setGameState(prev => ({
             ...prev,
             currentChallenge: newChallengeIndex,
             userCode: '',
             showFeedback: false,
-            attempts: 0,  // Reset attempts for new challenge
-            feedback: levelsUnlocked ? `Correct! +${totalPoints} points${levelsUnlocked ? ' 🎉 New level(s) unlocked!' : ''}` : prev.feedback
+            attempts: 0,
+            feedback: levelsUnlocked ? `Correct! +${totalPoints} points 🎉 New level(s) unlocked!` : prev.feedback
           }));
         } else {
-          // ✅ LEVEL COMPLETE - Set checkpoint for next level
+          // Level complete
           const nextLevelIndex = gameState.currentLevel + 1;
-          const nextLevelId = nextLevelIndex + 1; // Level IDs are 1-indexed
+          const nextLevelId = nextLevelIndex + 1;
           
-          if (nextLevelIndex < levels.length) {
-            // Set checkpoint for next level
+          if (nextLevelIndex < enhancedMultiLanguageLevels.length) {
             const newCheckpoints = { ...levelCheckpoints, [nextLevelId]: newScore };
             setLevelCheckpoints(newCheckpoints);
-            
-            // Save progress with updated unlocked levels and checkpoints
             saveLocalPlayer(playerName, newScore, gameState.currentLevel, newChallengeIndex, newUnlockedLevels, newCheckpoints, randomizedChallengeOrders, gameState.solvedQuestions + 1);
           }
 
@@ -241,28 +264,26 @@ export const useGameEngine = () => {
             showFeedback: true
           }));
 
-          // Notify global listeners (e.g., leaderboard)
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('levelCompleted', {
               detail: { levelId: gameState.currentLevel + 1 }
             }));
           }, 1000);
 
-          // Move to next level
           setTimeout(() => {
-            if (nextLevelIndex < levels.length) {
-              setCurrentLevel(levels[nextLevelIndex]);
+            if (nextLevelIndex < enhancedMultiLanguageLevels.length) {
+              const langAwareLevels = languageAwareLevels();
+              setCurrentLevel(langAwareLevels[nextLevelIndex]);
               setGameState(prev => ({
                 ...prev,
                 currentLevel: nextLevelIndex,
                 currentChallenge: 0,
                 userCode: '',
-                feedback: `Welcome to Level ${nextLevelIndex + 1}: ${levels[nextLevelIndex].title}!`,
+                feedback: `Welcome to Level ${nextLevelIndex + 1}: ${langAwareLevels[nextLevelIndex].title}!`,
                 showFeedback: true,
                 beatCount: 0
               }));
 
-              // Save fresh level progress
               saveLocalPlayer(playerName, newScore, nextLevelIndex, 0, newUnlockedLevels, levelCheckpoints, randomizedChallengeOrders, gameState.solvedQuestions + 1);
 
               setTimeout(() => {
@@ -273,44 +294,41 @@ export const useGameEngine = () => {
         }
       }, 1500);
     } else {
-      // ✅ PENALTY SYSTEM - Deduct points for wrong attempts
-      const penalty = Math.min(10 + gameState.attempts * 5, 50); // Progressive penalty: 10, 15, 20, 25, 30... max 50
-      const newScore = Math.max(0, gameState.score - penalty); // Don't go below 0
+      // Wrong answer - penalty system
+      const penalty = Math.min(10 + gameState.attempts * 5, 50);
+      const newScore = Math.max(0, gameState.score - penalty);
       
       setGameState(prev => ({
         ...prev,
         score: newScore,
         streak: 0,
-        attempts: prev.attempts + 1,  // Increment attempts on failure
-        feedback: `❌ Try again! -${penalty} points penalty (Attempt ${prev.attempts + 1}). Check the hint for guidance.`,
+        attempts: prev.attempts + 1,
+        feedback: `${validationResult.feedback} -${penalty} points penalty (Attempt ${prev.attempts + 1}). Score: ${validationResult.score}%`,
         showFeedback: true
       }));
       
-      // Save the updated score with penalty (no change to solvedQuestions since it wasn't solved)
       saveLocalPlayer(playerName, newScore, gameState.currentLevel, gameState.currentChallenge, unlockedLevels, levelCheckpoints, randomizedChallengeOrders, gameState.solvedQuestions);
       
       setTimeout(() => {
         setGameState(prev => ({ ...prev, showFeedback: false }));
       }, 2000);
     }
-  }, [currentLevel, gameState, stopGame, playerName, unlockedLevels, levelCheckpoints, getCurrentChallenge, randomizedChallengeOrders]);
+  }, [currentLevel, gameState, stopGame, playerName, unlockedLevels, levelCheckpoints, randomizedChallengeOrders, getCurrentChallenge, languageAwareLevels, selectedLanguage]);
 
   const skipQuestion = useCallback(() => {
     const newChallengeIndex = gameState.currentChallenge + 1;
 
     setGameState(prev => ({
       ...prev,
-      streak: 0, // Reset streak when skipping
+      streak: 0,
       feedback: 'Question skipped! No points awarded.',
       showFeedback: true,
-      attempts: 0  // Reset attempts on skip
+      attempts: 0
     }));
 
-    // Save current progress (without adding points or counting as completed - solvedQuestions stays the same)
     saveLocalPlayer(playerName, gameState.score, gameState.currentLevel, newChallengeIndex, unlockedLevels, levelCheckpoints, randomizedChallengeOrders, gameState.solvedQuestions);
 
     setTimeout(() => {
-      // More challenges in current level
       if (gameState.currentChallenge < currentLevel.challenges.length - 1) {
         setGameState(prev => ({
           ...prev,
@@ -321,7 +339,6 @@ export const useGameEngine = () => {
           feedback: ''
         }));
       } else {
-        // Last challenge in level - stop game but don't complete level
         stopGame();
         setGameState(prev => ({
           ...prev,
@@ -337,9 +354,10 @@ export const useGameEngine = () => {
   }, [currentLevel, gameState, stopGame, playerName, unlockedLevels, levelCheckpoints, randomizedChallengeOrders]);
 
   const changeLevel = useCallback((levelIndex: number) => {
-    if (levelIndex >= 0 && levelIndex < levels.length && levels[levelIndex].unlocked) {
+    const langAwareLevels = languageAwareLevels();
+    if (levelIndex >= 0 && levelIndex < langAwareLevels.length && langAwareLevels[levelIndex].unlocked) {
       stopGame();
-      setCurrentLevel(levels[levelIndex]);
+      setCurrentLevel(langAwareLevels[levelIndex]);
       setGameState(prev => ({
         ...prev,
         currentLevel: levelIndex,
@@ -348,47 +366,41 @@ export const useGameEngine = () => {
         feedback: '',
         showFeedback: false,
         beatCount: 0,
-        attempts: 0  // Reset attempts when changing levels
+        attempts: 0
       }));
     }
-  }, [stopGame]);
+  }, [stopGame, languageAwareLevels]);
 
   const updateUserCode = useCallback((code: string) => {
     setGameState(prev => ({ ...prev, userCode: code }));
   }, []);
 
-  // Helper function to calculate unlock progress
   const getUnlockProgress = useCallback(() => {
-    // Use the solvedQuestions counter instead of calculating from level progress
     const totalQuestionsAnswered = gameState.solvedQuestions;
-    
     const questionsNeededPerLevel = 20;
     const questionsToNextUnlock = questionsNeededPerLevel - (totalQuestionsAnswered % questionsNeededPerLevel);
-    const nextLevelToUnlock = Math.floor(totalQuestionsAnswered / questionsNeededPerLevel) + 2; // +2 because levels are 1-indexed and we want the next one
+    const nextLevelToUnlock = Math.floor(totalQuestionsAnswered / questionsNeededPerLevel) + 2;
     
     return {
       questionsToNextUnlock: questionsToNextUnlock === questionsNeededPerLevel ? 0 : questionsToNextUnlock,
-      nextLevelToUnlock: nextLevelToUnlock <= levels.length ? nextLevelToUnlock : null,
+      nextLevelToUnlock: nextLevelToUnlock <= enhancedMultiLanguageLevels.length ? nextLevelToUnlock : null,
       totalQuestionsAnswered: totalQuestionsAnswered,
       progressPercentage: ((totalQuestionsAnswered % questionsNeededPerLevel) / questionsNeededPerLevel) * 100
     };
   }, [gameState.solvedQuestions]);
 
   const resetToCheckpoint = useCallback(() => {
-    // Stop current game
     stopGame();
     
-    // Get the checkpoint score for current level
-    const currentLevelId = gameState.currentLevel + 1; // Level IDs are 1-indexed
+    const currentLevelId = gameState.currentLevel + 1;
     const checkpointScore = levelCheckpoints[currentLevelId] || 0;
     
-    // Reset game state to checkpoint values
     setGameState(prev => ({
       ...prev,
-      currentChallenge: 0, // Reset to start of current level
-      score: checkpointScore, // Reset to checkpoint score
-      streak: 0, // Reset streak
-      userCode: '', // Clear code input
+      currentChallenge: 0,
+      score: checkpointScore,
+      streak: 0,
+      userCode: '',
       feedback: `Reset to Level ${currentLevelId} checkpoint! Score: ${checkpointScore}`,
       showFeedback: true,
       beatCount: 0,
@@ -396,27 +408,23 @@ export const useGameEngine = () => {
       isPlaying: false
     }));
     
-    // Save the reset state (keep existing solvedQuestions count)
     saveLocalPlayer(playerName, checkpointScore, gameState.currentLevel, 0, unlockedLevels, levelCheckpoints, randomizedChallengeOrders, gameState.solvedQuestions);
     
-    // Hide feedback after 2 seconds
     setTimeout(() => {
       setGameState(prev => ({ ...prev, showFeedback: false }));
     }, 2000);
     
-    return true; // Indicate successful reset
+    return true;
   }, [stopGame, gameState.currentLevel, gameState.solvedQuestions, levelCheckpoints, playerName, unlockedLevels, randomizedChallengeOrders]);
 
   const resetGame = useCallback(() => {
-    // Stop current game
     stopGame();
     
-    // Reset all levels to locked except first one
-    levels.forEach((level, index) => {
+    const langAwareLevels = languageAwareLevels();
+    langAwareLevels.forEach((level, index) => {
       level.unlocked = index === 0;
     });
     
-    // Reset game state to initial values
     setGameState({
       currentLevel: 0,
       currentChallenge: 0,
@@ -431,24 +439,18 @@ export const useGameEngine = () => {
       solvedQuestions: 0
     });
     
-    // Reset to first level
-    setCurrentLevel(levels[0]);
-    
-    // Reset unlocked levels and checkpoints
+    setCurrentLevel(langAwareLevels[0]);
     setUnlockedLevels([1]);
     setLevelCheckpoints({ 1: 0 });
-    
-    // Clear randomized challenge orders to force regeneration
     setRandomizedChallengeOrders({});
     
-    // Clear local storage
     localStorage.removeItem("codeBeatPlayer");
     localStorage.removeItem("playerStats");
     localStorage.removeItem("achievements");
     localStorage.removeItem("playerProgress");
     
-    return true; // Indicate successful reset
-  }, [stopGame]);
+    return true;
+  }, [stopGame, languageAwareLevels]);
 
   return {
     gameState,
@@ -456,15 +458,15 @@ export const useGameEngine = () => {
     startGame,
     stopGame,
     submitCode,
-    skipQuestion, // Add skip function
+    skipQuestion,
     changeLevel,
     updateUserCode,
-    resetGame, // Expose resetGame function
-    resetToCheckpoint, // Expose resetToCheckpoint function
-    levels,
+    resetGame,
+    resetToCheckpoint,
+    levels: languageAwareLevels(),
     unlockedLevels,
     levelCheckpoints,
-    getUnlockProgress, // Expose unlock progress function
-    getCurrentChallenge // Expose function to get current challenge in random order
+    getUnlockProgress,
+    getCurrentChallenge
   };
 };

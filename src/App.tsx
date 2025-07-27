@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award } from 'lucide-react';
-import { useGameEngine } from './hooks/useGameEngine';
+import { Play, Pause, RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award, Code } from 'lucide-react';
+import { useMultiLanguageGameEngine } from './hooks/useMultiLanguageGameEngine';
 import { useAchievements } from './hooks/useAchievements';
 import { TopBar } from './components/TopBar';
 import { BeatLine } from './components/BeatLine';
 import { CodeInput } from './components/CodeInput';
 import { AllLevelsLeaderboard } from './components/AllLevelsLeaderboardNew';
 import { LevelSelector } from './components/LevelSelector';
+import { LanguageSelector } from './components/LanguageSelector';
 import { Leaderboard } from './components/Leaderboard';
 import { ScoreSubmission } from './components/ScoreSubmission';
 import { AchievementNotification } from './components/AchievementNotification';
 import { ProgressTracker } from './components/ProgressTracker';
 import { DashboardModal } from './components/DashboardModal';
 import { LevelProgress } from './components/LevelProgress';
+import { OnboardingTour } from './components/OnboardingTour';
 import { Achievement } from './types/game';
 
 function App() {
   const [showLevelSelector, setShowLevelSelector] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showScoreSubmission, setShowScoreSubmission] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
@@ -25,6 +28,8 @@ function App() {
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
   const [shownAchievements, setShownAchievements] = useState<Set<string>>(new Set());
   const [showAchievementBonus, setShowAchievementBonus] = useState(false);
+  const [lastSolvedChallenge, setLastSolvedChallenge] = useState<{level: number, challenge: number} | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Load shown achievements from localStorage on mount
   useEffect(() => {
@@ -37,6 +42,12 @@ function App() {
         console.error('Failed to load shown achievements:', error);
       }
     }
+
+    // Check if user needs onboarding
+    const hasCompletedOnboarding = localStorage.getItem('codeBeatOnboardingCompleted');
+    if (!hasCompletedOnboarding) {
+      setShowOnboarding(true);
+    }
   }, []);
   
   const {
@@ -45,14 +56,17 @@ function App() {
     startGame,
     stopGame,
     submitCode,
+    skipQuestion,
     changeLevel,
     updateUserCode,
     resetGame,
     resetToCheckpoint,
     levels,
     unlockedLevels,
-    levelCheckpoints
-  } = useGameEngine();
+    levelCheckpoints,
+    getUnlockProgress,
+    getCurrentChallenge
+  } = useMultiLanguageGameEngine(selectedLanguage);
 
   const { 
     updatePlayerStats, 
@@ -78,35 +92,48 @@ function App() {
       languages_used: [selectedLanguage]
     });
 
-    // Check for achievements when meaningful game progress happens
-    if (gameState.score > 0 || gameState.currentLevel > 0 || gameState.currentChallenge > 0) {
-      const newAchievements = checkAchievements();
-      if (newAchievements.length > 0) {
-        const achievement = newAchievements[0];
+    // Only check achievements when there's an actual score increase or streak increase
+    // This prevents achievements from triggering on skipped questions
+    const shouldCheckAchievements = gameState.score > 0 && gameState.streak > 0;
+    
+    if (shouldCheckAchievements) {
+      // Check if this is a new solved challenge (not just a skip)
+      const currentPosition = { level: gameState.currentLevel, challenge: gameState.currentChallenge };
+      const isNewSolve = !lastSolvedChallenge || 
+        lastSolvedChallenge.level !== currentPosition.level || 
+        lastSolvedChallenge.challenge !== currentPosition.challenge;
+      
+      if (isNewSolve && gameState.feedback.includes('Perfect!')) {
+        setLastSolvedChallenge(currentPosition);
         
-        // Show achievement notification only if not shown before
-        if (!shownAchievements.has(achievement.id)) {
-          setNewAchievement(achievement);
-          const newShownSet = new Set([...shownAchievements, achievement.id]);
-          setShownAchievements(newShownSet);
+        const newAchievements = checkAchievements();
+        if (newAchievements.length > 0) {
+          const achievement = newAchievements[0];
           
-          // Save to localStorage
-          localStorage.setItem('shownAchievements', JSON.stringify([...newShownSet]));
-          
-          // Add achievement points
-          addAchievementPoints(achievement.reward.points);
-          
-          // Show achievement bonus indicator
-          setShowAchievementBonus(true);
-          
-          // Hide achievement bonus indicator after 1 second
-          setTimeout(() => {
-            setShowAchievementBonus(false);
-          }, 1000);
+          // Show achievement notification only if not shown before
+          if (!shownAchievements.has(achievement.id)) {
+            setNewAchievement(achievement);
+            const newShownSet = new Set([...shownAchievements, achievement.id]);
+            setShownAchievements(newShownSet);
+            
+            // Save to localStorage
+            localStorage.setItem('shownAchievements', JSON.stringify([...newShownSet]));
+            
+            // Add achievement points
+            addAchievementPoints(achievement.reward.points);
+            
+            // Show achievement bonus indicator
+            setShowAchievementBonus(true);
+            
+            // Hide achievement bonus indicator after 1 second
+            setTimeout(() => {
+              setShowAchievementBonus(false);
+            }, 1000);
+          }
         }
       }
     }
-  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, selectedLanguage, updatePlayerStats, updateGameScore, checkAchievements, shownAchievements, addAchievementPoints]);
+  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, gameState.feedback, selectedLanguage, updatePlayerStats, updateGameScore, checkAchievements, shownAchievements, addAchievementPoints, lastSolvedChallenge]);
 
   const handleScoreSubmitted = () => {
     setShowScoreSubmission(false);
@@ -166,6 +193,7 @@ function App() {
       {/* Main Game Interface */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Enhanced Header */}
+        
         <div className="bg-black/20 dark:bg-black/20 light:bg-white/80 backdrop-blur-md border-b border-white/10 dark:border-white/10 light:border-indigo-200/50 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -185,7 +213,7 @@ function App() {
             
             <div className="flex items-center space-x-4">
               {/* Score Display */}
-              <div className="bg-black/30 dark:bg-black/30 light:bg-white/70 backdrop-blur-sm border border-white/10 dark:border-white/10 light:border-indigo-200/50 rounded-xl px-4 py-2">
+              <div className="score-display bg-black/30 dark:bg-black/30 light:bg-white/70 backdrop-blur-sm border border-white/10 dark:border-white/10 light:border-indigo-200/50 rounded-xl px-4 py-2">
                 <div className="flex items-center space-x-2">
                   <Star className="w-4 h-4 text-yellow-400" />
                   <span className="font-bold text-lg text-white dark:text-white light:text-slate-800">{playerStats.total_score.toLocaleString()}</span>
@@ -210,11 +238,12 @@ function App() {
                 gameState={gameState}
                 currentLevel={currentLevel}
                 levels={levels}
+                getUnlockProgress={getUnlockProgress}
               />
               
               {/* Streak Display */}
               {gameState.streak > 0 && (
-                <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-500/30 rounded-xl px-3 py-2">
+                <div className="streak-display bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-500/30 rounded-xl px-3 py-2">
                   <div className="flex items-center space-x-1">
                     <Zap className="w-4 h-4 text-orange-400" />
                     <span className="font-bold text-orange-400">{gameState.streak}x</span>
@@ -234,79 +263,6 @@ function App() {
             </div>
           </div>
         </div>
-
-        {/* Level Info Bar */}
-        <div className="bg-black/10 dark:bg-black/10 light:bg-white/60 backdrop-blur-sm border-b border-white/5 dark:border-white/5 light:border-indigo-200/30 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                Level {currentLevel.id}
-              </div>
-              <div className="text-white dark:text-white light:text-slate-800 font-semibold">{currentLevel.title}</div>
-              <div className="text-gray-400 dark:text-gray-400 light:text-slate-600 text-sm">{currentLevel.description}</div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              {/* Checkpoint indicator */}
-              {levelCheckpoints && levelCheckpoints[currentLevel.id] !== undefined && (
-                <div className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded-lg text-xs font-medium">
-                  Checkpoint: {levelCheckpoints[currentLevel.id]?.toLocaleString() || 0}
-                </div>
-              )}
-              
-              <div className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                currentLevel.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                currentLevel.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                'bg-red-500/20 text-red-400 border border-red-500/30'
-              }`}>
-                {currentLevel.difficulty}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <BeatLine
-          gameState={gameState}
-          currentLevel={currentLevel}
-        />
-        
-        <div className="flex flex-1 min-h-0 flex-col">
-          {/* Top Row - Code Editor and Progress Tracker */}
-          <div className="flex flex-1 min-h-0">
-            {/* Code Editor */}
-            <div className="flex-1 min-h-0">
-              <CodeInput
-                gameState={gameState}
-                currentLevel={currentLevel}
-                selectedLanguage={selectedLanguage}
-                onSubmitCode={submitCode}
-                onUpdateCode={updateUserCode}
-              />
-            </div>
-            
-            {/* Side Panel - Progress Tracker */}
-            <div className="w-80 bg-black/20 dark:bg-black/20 light:bg-white/70 backdrop-blur-sm border-l border-white/10 dark:border-white/10 light:border-indigo-200/50">
-              <div className="p-4 h-full">
-                <h2 className="text-lg font-bold text-white dark:text-white light:text-slate-800 mb-4 flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <span>Your Progress</span>
-                </h2>
-                <ProgressTracker
-                  playerStats={playerStats}
-                  currentStreak={gameState.streak}
-                  currentScore={gameState.score}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Bottom Row - All Levels Leaderboard (Full Width) */}
-          <div className="h-80 border-t border-white/10 dark:border-white/10 light:border-indigo-200/30 bg-black/10 dark:bg-black/10 light:bg-white/50 backdrop-blur-sm">
-            <AllLevelsLeaderboard currentLevelId={currentLevel.id} />
-          </div>
-        </div>
-        
-        {/* Enhanced Bottom Action Bar */}
         <div className="bg-black/30 dark:bg-black/30 light:bg-white/80 backdrop-blur-md border-t border-white/10 dark:border-white/10 light:border-indigo-200/50 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -315,7 +271,7 @@ function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={gameState.isPlaying ? stopGame : startGame}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                className={`play-button flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
                   gameState.isPlaying 
                     ? 'bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400' 
                     : 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400'
@@ -355,8 +311,18 @@ function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setShowLanguageSelector(true)}
+                className="language-button flex items-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-xl transition-all duration-200"
+              >
+                <Code className="w-4 h-4" />
+                <span className="font-medium">{selectedLanguage.charAt(0).toUpperCase() + selectedLanguage.slice(1)}</span>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLevelSelector(true)}
-                className="flex items-center space-x-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 px-4 py-2 rounded-xl transition-all duration-200"
+                className="levels-button flex items-center space-x-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 px-4 py-2 rounded-xl transition-all duration-200"
               >
                 <BookOpen className="w-4 h-4" />
                 <span className="font-medium">Levels</span>
@@ -370,7 +336,7 @@ function App() {
                   // Mark all achievements as seen when dashboard is opened
                   markAchievementsAsSeen();
                 }}
-                className="flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-4 py-2 rounded-xl transition-all duration-200 relative"
+                className="dashboard-button flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-4 py-2 rounded-xl transition-all duration-200 relative"
               >
                 <Award className="w-4 h-4" />
                 <span className="font-medium">Dashboard</span>
@@ -405,6 +371,83 @@ function App() {
             </div>
           </div>
         </div>
+
+        {/* Level Info Bar */}
+        <div className="bg-black/10 dark:bg-black/10 light:bg-white/60 backdrop-blur-sm border-b border-white/5 dark:border-white/5 light:border-indigo-200/30 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                Level {currentLevel.id}
+              </div>
+              <div className="text-white dark:text-white light:text-slate-800 font-semibold">{currentLevel.title}</div>
+              <div className="text-gray-400 dark:text-gray-400 light:text-slate-600 text-sm">{currentLevel.description}</div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* Checkpoint indicator */}
+              {levelCheckpoints && levelCheckpoints[currentLevel.id] !== undefined && (
+                <div className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded-lg text-xs font-medium">
+                  Checkpoint: {levelCheckpoints[currentLevel.id]?.toLocaleString() || 0}
+                </div>
+              )}
+              
+              <div className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                currentLevel.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                currentLevel.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}>
+                {currentLevel.difficulty}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <BeatLine
+          gameState={gameState}
+          currentLevel={currentLevel}
+          getCurrentChallenge={getCurrentChallenge}
+        />
+        
+        <div className="flex flex-1 min-h-0 flex-col">
+          {/* Top Row - Code Editor and Progress Tracker */}
+          <div className="flex flex-1 min-h-0">
+            {/* Code Editor */}
+            <div className="code-editor flex-1 min-h-0">
+              <CodeInput
+                gameState={gameState}
+                currentLevel={currentLevel}
+                selectedLanguage={selectedLanguage}
+                onSubmitCode={submitCode}
+                onUpdateCode={updateUserCode}
+                onSkipQuestion={skipQuestion}
+                getCurrentChallenge={getCurrentChallenge}
+              />
+            </div>
+            
+            {/* Side Panel - Progress Tracker */}
+            <div className="progress-tracker w-80 bg-black/20 dark:bg-black/20 light:bg-white/70 backdrop-blur-sm border-l border-white/10 dark:border-white/10 light:border-indigo-200/50">
+              <div className="p-4 h-full">
+                <h2 className="text-lg font-bold text-white dark:text-white light:text-slate-800 mb-4 flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-yellow-400" />
+                  <span>Your Progress</span>
+                </h2>
+                <ProgressTracker
+                  playerStats={playerStats}
+                  currentStreak={gameState.streak}
+                  currentScore={gameState.score}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Bottom Row - All Levels Leaderboard (Full Width) */}
+          <div className="h-80 border-t border-white/10 dark:border-white/10 light:border-indigo-200/30 bg-black/10 dark:bg-black/10 light:bg-white/50 backdrop-blur-sm">
+            <AllLevelsLeaderboard currentLevelId={currentLevel.id} />
+          </div>
+        </div>
+        
+        {/* Enhanced Bottom Action Bar */}
+        
       </div>
       
       {/* Level Selector Modal */}
@@ -419,6 +462,21 @@ function App() {
             }}
             isOpen={showLevelSelector}
             onClose={() => setShowLevelSelector(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Language Selector Modal */}
+      <AnimatePresence>
+        {showLanguageSelector && (
+          <LanguageSelector
+            isOpen={showLanguageSelector}
+            onClose={() => setShowLanguageSelector(false)}
+            selectedLanguage={selectedLanguage}
+            onSelectLanguage={(language) => {
+              setSelectedLanguage(language);
+              setShowLanguageSelector(false);
+            }}
           />
         )}
       </AnimatePresence>
@@ -481,6 +539,11 @@ function App() {
         achievement={newAchievement}
         onClose={() => setNewAchievement(null)}
       />
+
+      {/* Onboarding Tour */}
+      {showOnboarding && (
+        <OnboardingTour onComplete={() => setShowOnboarding(false)} />
+      )}
     </div>
   );
 }

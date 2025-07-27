@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Award, Crown, User, Star, RefreshCw, Target, Clock } from 'lucide-react';
-import { GameState, Level } from '../types/game';
+import { GameState, Level, Challenge } from '../types/game';
 import { getLeaderboardByLevel, LeaderboardEntry } from '../lib/supabase';
 
 interface BeatLineProps {
   gameState: GameState;
   currentLevel: Level;
+  getCurrentChallenge?: () => Challenge;
 }
 
-export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) => {
+export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel, getCurrentChallenge }) => {
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,10 +24,17 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
   };
 
   useEffect(() => {
-    if (currentLevel.challenges[gameState.currentChallenge]) {
-      setCurrentPrompt(currentLevel.challenges[gameState.currentChallenge].prompt);
+    if (getCurrentChallenge) {
+      // Use the randomized challenge order
+      const challenge = getCurrentChallenge();
+      setCurrentPrompt(challenge.prompt);
+    } else {
+      // Fallback to sequential order
+      if (currentLevel.challenges[gameState.currentChallenge]) {
+        setCurrentPrompt(currentLevel.challenges[gameState.currentChallenge].prompt);
+      }
     }
-  }, [currentLevel.challenges, gameState.currentChallenge]);
+  }, [currentLevel.challenges, gameState.currentChallenge, getCurrentChallenge]);
 
   useEffect(() => {
     fetchLevelLeaderboard();
@@ -91,22 +99,34 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel }) =
               </div>
             </div>
             
-            {/* Progress Dots */}
+            {/* Progress Dots - Simplified 3 dot view */}
             <div className="flex items-center space-x-2">
-              {Array.from({ length: currentLevel.challenges.length }, (_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    i < gameState.currentChallenge
-                      ? 'bg-green-500 shadow-lg shadow-green-500/50'
-                      : i === gameState.currentChallenge
-                      ? 'bg-blue-500 shadow-lg shadow-blue-500/50 animate-pulse'
-                      : 'bg-gray-600 border border-gray-500'
-                  }`}
-                />
-              ))}
+              {Array.from({ length: 3 }, (_, i) => {
+                let dotState = '';
+                if (i === 0) {
+                  // Previous challenge dot (green if there's a previous challenge)
+                  dotState = gameState.currentChallenge > 0 
+                    ? 'bg-green-500 shadow-lg shadow-green-500/50' 
+                    : 'bg-gray-600 border border-gray-500';
+                } else if (i === 1) {
+                  // Current challenge dot (always blue and pulsing)
+                  dotState = 'bg-blue-500 shadow-lg shadow-blue-500/50 animate-pulse';
+                } else {
+                  // Next challenge dot (gray if there's a next challenge)
+                  dotState = gameState.currentChallenge < currentLevel.challenges.length - 1 
+                    ? 'bg-gray-600 border border-gray-500' 
+                    : 'bg-gray-700 border border-gray-600 opacity-50';
+                }
+                
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${dotState}`}
+                  />
+                );
+              })}
             </div>
           </div>
           
