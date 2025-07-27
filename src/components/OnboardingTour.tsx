@@ -121,11 +121,24 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
   const step = onboardingSteps[currentStep];
 
   const getModalPosition = () => {
+    // Force center position for steps that specify center position
+    if (step.position === 'center') {
+      return {
+        position: 'fixed' as const,
+        top: '30%',
+        left: '38%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 52,
+        maxWidth: '90vw',
+        width: '400px' // Fixed width for center modals
+      };
+    }
+    
     // If we have a highlighted element, position relative to it
     if (spotlightRect && step.target) {
-      const modalWidth = 350; // Reduced modal width
-      const modalHeight = 250; // Reduced modal height
-      const spacing = 30; // Increased space between element and modal
+      const modalWidth = 400; // Increased modal width
+      const modalHeight = 280; // Increased modal height  
+      const spacing = 20; // Space between element and modal
       
       const elementCenterX = spotlightRect.left + spotlightRect.width / 2;
       const elementCenterY = spotlightRect.top + spotlightRect.height / 2;
@@ -134,50 +147,45 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
       
       let left = elementCenterX;
       let top = elementCenterY;
-      const transform = '';
       
-      // Try to position to the right of the element first
-      if (spotlightRect.right + spacing + modalWidth < viewportWidth) {
+      // For code editor, position to the right center
+      if (step.target === '.code-editor') {
+        left = Math.min(spotlightRect.right + spacing, viewportWidth - modalWidth - 20);
+        top = Math.max(20, Math.min(elementCenterY - modalHeight / 2, viewportHeight - modalHeight - 20));
+      }
+      // Try to position to the right of the element first for other elements
+      else if (spotlightRect.right + spacing + modalWidth < viewportWidth) {
         left = spotlightRect.right + spacing;
-        top = Math.max(spacing, Math.min(spotlightRect.top - 50, viewportHeight - modalHeight - spacing));
+        top = Math.max(20, Math.min(spotlightRect.top - 50, viewportHeight - modalHeight - 20));
       }
       // If not enough space on right, try left
       else if (spotlightRect.left - spacing - modalWidth > 0) {
         left = spotlightRect.left - spacing - modalWidth;
-        top = Math.max(spacing, Math.min(spotlightRect.top - 50, viewportHeight - modalHeight - spacing));
+        top = Math.max(20, Math.min(spotlightRect.top - 50, viewportHeight - modalHeight - 20));
       }
       // If not enough space left/right, try below
       else if (spotlightRect.bottom + spacing + modalHeight < viewportHeight) {
-        left = Math.max(spacing, Math.min(elementCenterX - modalWidth / 2, viewportWidth - modalWidth - spacing));
+        left = Math.max(20, Math.min(elementCenterX - modalWidth / 2, viewportWidth - modalWidth - 20));
         top = spotlightRect.bottom + spacing;
       }
       // If not enough space below, try above
       else if (spotlightRect.top - spacing - modalHeight > 0) {
-        left = Math.max(spacing, Math.min(elementCenterX - modalWidth / 2, viewportWidth - modalWidth - spacing));
+        left = Math.max(20, Math.min(elementCenterX - modalWidth / 2, viewportWidth - modalWidth - 20));
         top = spotlightRect.top - spacing - modalHeight;
       }
-      // Fallback: position to the side with more space, even if it overlaps viewport
+      // Fallback: center the modal
       else {
-        const rightSpace = viewportWidth - spotlightRect.right;
-        const leftSpace = spotlightRect.left;
-        
-        if (rightSpace > leftSpace) {
-          // Position to the right, even if it goes off screen
-          left = Math.min(spotlightRect.right + spacing, viewportWidth - modalWidth);
-          top = Math.max(spacing, Math.min(spotlightRect.top - 50, viewportHeight - modalHeight - spacing));
-        } else {
-          // Position to the left
-          left = Math.max(0, spotlightRect.left - spacing - modalWidth);
-          top = Math.max(spacing, Math.min(spotlightRect.top - 50, viewportHeight - modalHeight - spacing));
-        }
+        left = (viewportWidth - modalWidth) / 2;
+        top = (viewportHeight - modalHeight) / 2;
       }
       
       return {
         position: 'fixed' as const,
         left: `${left}px`,
         top: `${top}px`,
-        transform,
-        zIndex: 51
+        transform: '',
+        zIndex: 52,
+        width: `${modalWidth}px`
       };
     }
     
@@ -211,25 +219,27 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
       }
     }
     
-    // Fallback to center for non-targeted steps
+    // Fallback to center for non-targeted steps or center position steps
     return {
       position: 'fixed' as const,
-      top: '50%',
-      left: '50%',
+      top: '25%',
+      left: '25%',
       transform: 'translate(-50%, -50%)',
       zIndex: 51,
-      maxWidth: '90vw' // Ensure it doesn't go off screen on small devices
+      maxWidth: '90vw', // Ensure it doesn't go off screen on small devices
+      width: '400px' // Fixed width for center modals
     };
   };
 
-  // Add spotlight effect for targeted elements
+  // Add glow effect for targeted elements
   useEffect(() => {
     if (step.target) {
       const element = document.querySelector(step.target);
       if (element) {
-        element.classList.add('onboarding-highlight');
+        // Add glow effect
+        element.classList.add('onboarding-glow');
         
-        // Get element position for spotlight
+        // Get element position for modal positioning
         const rect = element.getBoundingClientRect();
         setSpotlightRect(rect);
         
@@ -241,7 +251,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
         });
         
         return () => {
-          element.classList.remove('onboarding-highlight');
+          element.classList.remove('onboarding-glow');
           setSpotlightRect(null);
         };
       }
@@ -254,27 +264,6 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
     <AnimatePresence>
       {isVisible && (
         <>
-          {/* Main Overlay with Spotlight Cutout */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50"
-            style={{
-              background: spotlightRect
-                ? `radial-gradient(circle at ${spotlightRect.left + spotlightRect.width / 2}px ${spotlightRect.top + spotlightRect.height / 2}px, transparent ${Math.max(spotlightRect.width, spotlightRect.height) / 2 + 20}px, rgba(0, 0, 0, 0.8) ${Math.max(spotlightRect.width, spotlightRect.height) / 2 + 60}px)`
-                : 'rgba(0, 0, 0, 0.7)'
-            }}
-          />
-          
-          {/* Additional Dark Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-49"
-          />
-          
           {/* Tour Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -282,9 +271,9 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
             style={getModalPosition()}
-            className="max-w-sm"
+            className="max-w-md"
           >
-            <div className="bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-sm border border-indigo-500/30 rounded-2xl p-6 shadow-2xl">
+            <div className="bg-gradient-to-br from-indigo-900/98 to-purple-900/98 backdrop-blur-md border border-indigo-500/40 rounded-2xl p-6 shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">

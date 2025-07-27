@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award, Menu, X, Code2 } from 'lucide-react';
+import { RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award, Menu, X, Code2, Undo, Shield } from 'lucide-react';
 import { useMultiLanguageGameEngine } from './hooks/useMultiLanguageGameEngine';
 import { useAchievements } from './hooks/useAchievements';
 import { TopBar } from './components/TopBar';
@@ -232,14 +232,31 @@ function App() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
+                    setShowDashboard(true);
+                    markAchievementsAsSeen();
+                    setShowHamburgerMenu(false);
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm relative"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="font-medium">Checkpoint System</span>
+                  {getUnseenAchievements().length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                      {getUnseenAchievements().length}
+                    </span>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => {
                     resetToCheckpoint();
                     setShowHamburgerMenu(false);
                     alert("🔄 Level restarted!\n\nYou're back at the start of this level with your checkpoint score.");
                   }}
                   className="flex items-center justify-center space-x-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
                 >
-                  <RotateCcw className="w-4 h-4" />
-                  <span className="font-medium">Restart Level</span>
+                  <Undo className="w-4 h-4" />
+                  <span className="font-medium">Reset Level</span>
                 </button>
                 
                 <button

@@ -134,8 +134,6 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
                 >
                   <SkillTree 
                     playerStats={playerStats}
-                    onResetLevel={onResetLevel}
-                    onResetProgress={onResetProgress}
                     currentAttempts={currentAttempts}
                     totalPenalties={Math.max(0, playerStats.challenges_completed * 5 - playerStats.total_score / 100)} // Estimate penalties from stats
                     levelsUnlocked={unlockedLevels.length}

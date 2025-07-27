@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Code2, Zap, Target, Award, Lock, CheckCircle, Star, Undo, Shield, TrendingUp, Brain, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Code2, Zap, Target, Award, Lock, CheckCircle, Star, Undo, Shield, TrendingUp, Brain, RotateCcw, ChevronDown } from 'lucide-react';
 import { PlayerStats } from '../types/game';
 
 interface SkillNode {
@@ -24,9 +24,6 @@ interface SkillNode {
 
 interface SkillTreeProps {
   playerStats: PlayerStats;
-  // Optional props for reset functionality
-  onResetLevel?: () => void;
-  onResetProgress?: () => void;
   currentAttempts?: number;
   totalPenalties?: number;
   levelsUnlocked?: number;
@@ -35,14 +32,16 @@ interface SkillTreeProps {
 
 export const SkillTree: React.FC<SkillTreeProps> = ({ 
   playerStats,
-  onResetLevel,
-  onResetProgress,
   currentAttempts = 0,
   totalPenalties = 0,
   levelsUnlocked = 1,
   checkpointScore = 0
 }) => {
-  const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
+  const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
+
+  const toggleSkillDropdown = (skillId: string) => {
+    setExpandedSkill(expandedSkill === skillId ? null : skillId);
+  };
 
   // Calculate penalty resilience based on score recovery after penalties
   const penaltyResilience = totalPenalties > 0 ? Math.min(playerStats.total_score / (totalPenalties * 10), 10) : 0;
@@ -239,87 +238,15 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
     }
   };
 
-  const renderConnection = (from: SkillNode, to: SkillNode) => {
-    // Calculate positions based on a centered grid with improved spacing
-    const containerWidth = 600; // Increased container width for better spacing
-    const containerHeight = 500; // Fixed container height
-    
-    // Create a centered grid where (2,2) is the center
-    const centerX = containerWidth / 2;
-    const centerY = containerHeight / 2;
-    const gridSpacing = 120; // Increased spacing for better alignment
-    
-    const fromX = centerX + (from.position.x - 2) * gridSpacing;
-    const fromY = centerY + (from.position.y - 2) * gridSpacing;
-    const toX = centerX + (to.position.x - 2) * gridSpacing;
-    const toY = centerY + (to.position.y - 2) * gridSpacing;
-
-    const isUnlocked = to.unlocked;
-    
-    return (
-      <svg
-        key={`${from.id}-${to.id}`}
-        className="absolute top-0 left-0 w-full h-full pointer-events-none"
-        style={{ zIndex: 0 }}
-      >
-        <line
-          x1={fromX}
-          y1={fromY}
-          x2={toX}
-          y2={toY}
-          stroke={isUnlocked ? '#6366f1' : '#374151'}
-          strokeWidth="2"
-          strokeDasharray={isUnlocked ? '0' : '5,5'}
-          className="transition-all duration-300"
-        />
-      </svg>
-    );
-  };
-
   return (
     <div className="bg-black/20 dark:bg-black/20 light:bg-white/70 backdrop-blur-sm border border-white/10 dark:border-white/10 light:border-indigo-200/50 rounded-xl p-6">
-      <h2 className="text-lg font-bold text-white dark:text-white light:text-slate-800 mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+      <h2 className="text-lg font-bold text-white dark:text-white light:text-slate-800 mb-6 text-center">
+        <div className="flex items-center justify-center space-x-2">
           <Award className="w-5 h-5 text-purple-400" />
           <span>Skill Tree</span>
           <div className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30">
             Checkpoint System
           </div>
-        </div>
-        
-        {/* Reset Control Panel */}
-        <div className="flex items-center space-x-2">
-          {onResetLevel && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onResetLevel}
-              className="flex items-center space-x-1 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 px-3 py-1 rounded-lg text-xs transition-all duration-200"
-              title="Reset to current level checkpoint"
-            >
-              <Undo className="w-3 h-3" />
-              <span>Reset Level</span>
-            </motion.button>
-          )}
-          {onResetProgress && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                const confirmReset = window.confirm(
-                  "Reset all progress? This will:\n• Reset score to 0\n• Lock all levels except Level 1\n• Clear achievements\n• Reset statistics"
-                );
-                if (confirmReset && onResetProgress) {
-                  onResetProgress();
-                }
-              }}
-              className="flex items-center space-x-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 px-3 py-1 rounded-lg text-xs transition-all duration-200"
-              title="Complete progress reset"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset All</span>
-            </motion.button>
-          )}
         </div>
       </h2>
 
@@ -343,235 +270,219 @@ export const SkillTree: React.FC<SkillTreeProps> = ({
         </div>
       </div>
 
-      <div className="relative bg-black/10 dark:bg-black/10 light:bg-white/30 rounded-xl p-4 h-[550px] flex items-center justify-center overflow-hidden">
-        {/* Skill Tree Container */}
-        <div className="relative w-[600px] h-[500px]">
-
-        {/* Connections */}
-        <div className="absolute inset-0">
-          {skillNodes.map(node => 
-            node.prerequisites.map(prereqId => {
-              const prereqNode = skillNodes.find(n => n.id === prereqId);
-              return prereqNode ? renderConnection(prereqNode, node) : null;
-            })
-          )}
-        </div>
-
-        {/* Skill Nodes */}
-        <div className="absolute inset-0">
+      <div className="relative bg-black/10 dark:bg-black/10 light:bg-white/30 rounded-xl p-4">
+        {/* Unified View - Vertical List for Both Mobile and Desktop */}
+        <div className="space-y-3">
           {skillNodes.map(node => {
             const Icon = node.icon;
             const state = getNodeState(node);
-            const nodeSize = 80;
+            const isExpanded = expandedSkill === node.id;
             
-            // Calculate position using improved centered grid system
-            const containerWidth = 600;
-            const containerHeight = 500;
-            const centerX = containerWidth / 2;
-            const centerY = containerHeight / 2;
-            const gridSpacing = 120; // Increased spacing for better alignment
-            
-            const nodeX = centerX + (node.position.x - 2) * gridSpacing - (nodeSize / 2);
-            const nodeY = centerY + (node.position.y - 2) * gridSpacing - (nodeSize / 2);
-
             return (
-              <motion.div
-                key={node.id}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1 * node.position.y }}
-                className={`absolute rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all duration-300 ${getNodeStyles(node)}`}
-                style={{
-                  width: `${nodeSize}px`,
-                  height: `${nodeSize}px`,
-                  left: `${nodeX}px`,
-                  top: `${nodeY}px`
-                }}
-                onClick={() => setSelectedNode(node)}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <div className="flex items-center justify-center w-full h-full">
-                  <Icon className="w-8 h-8" />
-                </div>
-                {state === 'mastered' && (
-                  <CheckCircle className="absolute -top-2 -right-2 w-6 h-6 text-green-400 bg-black rounded-full" />
-                )}
-                {state === 'locked' && (
-                  <Lock className="absolute -top-2 -right-2 w-6 h-6 text-gray-500 bg-black rounded-full" />
-                )}
-              </motion.div>
+              <div key={node.id} className="bg-black/20 rounded-lg border border-white/10">
+                {/* Skill Header */}
+                <motion.div
+                  className={`p-4 rounded-lg cursor-pointer transition-all duration-300 ${getNodeStyles(node)}`}
+                  onClick={() => toggleSkillDropdown(node.id)}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        <Icon className="w-8 h-8 sm:w-10 sm:h-10" />
+                        {state === 'mastered' && (
+                          <CheckCircle className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 text-green-400 bg-black rounded-full" />
+                        )}
+                        {state === 'locked' && (
+                          <Lock className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 text-gray-500 bg-black rounded-full" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-base sm:text-lg">{node.name}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
+                          state === 'mastered' ? 'bg-green-500/20 text-green-400' :
+                          state === 'unlocked' ? 'bg-blue-500/20 text-blue-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {state.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                    <motion.div
+                      animate={{ rotate: isExpanded ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-6 h-6" />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* Skill Dropdown Details */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-4 border-t border-white/10 bg-black/10">
+                        <p className="text-sm sm:text-base text-gray-300 mb-4">{node.description}</p>
+                        
+                        {/* Enhanced descriptions for specific skills */}
+                        {node.id === 'checkpoint_master' && (
+                          <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-orange-300">
+                              💡 Master the checkpoint system: Use "Reset Level" strategically to practice challenges without losing all progress. 
+                              Checkpoints save your score at the start of each level!
+                            </p>
+                          </div>
+                        )}
+                        
+                        {node.id === 'penalty_resilience' && (
+                          <div className="mb-4 p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-cyan-300">
+                              🛡️ Learn from mistakes: Penalties increase progressively (10→15→20... max 50 points), but they help you learn. 
+                              Build resilience and maintain high scores despite setbacks!
+                            </p>
+                          </div>
+                        )}
+                        
+                        {node.id === 'adaptive_learner' && (
+                          <div className="mb-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-indigo-300">
+                              🧠 Smart learning: Use hints effectively, analyze your mistakes, and adapt your coding approach. 
+                              The best programmers learn from every attempt!
+                            </p>
+                          </div>
+                        )}
+                        
+                        {node.id === 'score_optimizer' && (
+                          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-emerald-300">
+                              📈 Strategic play: Balance speed and accuracy, maintain streaks, and know when to use checkpoint resets. 
+                              Optimize your score through smart decision-making!
+                            </p>
+                          </div>
+                        )}
+                        
+                        {node.id === 'progression_unlock' && (
+                          <div className="mb-4 p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-violet-300">
+                              🔒 <strong>Level Progression:</strong> Complete all challenges in a level to unlock the next. 
+                              Only the first level is unlocked by default. Progress through levels sequentially!
+                            </p>
+                          </div>
+                        )}
+                        
+                        {node.id === 'reset_strategist' && (
+                          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-rose-300">
+                              🔄 <strong>Reset Strategy:</strong> Know when to use "Reset Level" (checkpoint) vs "Reset All" (complete reset). 
+                              Strategic resets can save time and reduce frustration!
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Reset and penalty system tips */}
+                        {node.resetRelated && !node.id.includes('score_optimizer') && !node.id.includes('reset_strategist') && (
+                          <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-orange-300">
+                              ♻️ <strong>Reset System:</strong> Use "Reset Level" for minor issues, "Reset All" for major setbacks. 
+                              Master the art of strategic recovery!
+                            </p>
+                          </div>
+                        )}
+                        
+                        {node.penaltyRelated && !node.id.includes('penalty_resilience') && (
+                          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                            <p className="text-xs sm:text-sm text-red-300">
+                              ⚠️ <strong>Penalty System:</strong> Track penalty accumulation. Progressive penalties help learning but affect scores. 
+                              Build resilience and learn from mistakes!
+                            </p>
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Challenges:</span>
+                            <span className={`${playerStats.challenges_completed >= node.requiredChallenges ? 'text-green-400' : 'text-red-400'}`}>
+                              {playerStats.challenges_completed}/{node.requiredChallenges}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Score:</span>
+                            <span className={`${playerStats.total_score >= node.requiredScore ? 'text-green-400' : 'text-red-400'}`}>
+                              {playerStats.total_score.toLocaleString()}/{node.requiredScore.toLocaleString()}
+                            </span>
+                          </div>
+                          
+                          {/* Enhanced metrics for system-related skills */}
+                          {(node.resetRelated || node.penaltyRelated || node.progressionRelated) && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Levels Completed:</span>
+                                <span className="text-blue-400">{playerStats.levels_completed}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Max Streak:</span>
+                                <span className="text-purple-400">{playerStats.max_streak}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Perfect Submissions:</span>
+                                <span className="text-green-400">{playerStats.perfect_submissions}</span>
+                              </div>
+                            </>
+                          )}
+                          
+                          {node.penaltyRelated && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Total Penalties:</span>
+                                <span className="text-red-400">{totalPenalties}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Penalty Resilience:</span>
+                                <span className="text-cyan-400">{penaltyResilience.toFixed(1)}/10</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Current Attempts:</span>
+                                <span className="text-orange-400">{currentAttempts}</span>
+                              </div>
+                            </>
+                          )}
+                          
+                          {node.resetRelated && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Checkpoint Efficiency:</span>
+                                <span className="text-orange-400">{(checkpointEfficiency * 100).toFixed(0)}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Current Checkpoint:</span>
+                                <span className="text-blue-400">{checkpointScore.toLocaleString()}</span>
+                              </div>
+                            </>
+                          )}
+                          
+                          {node.progressionRelated && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Levels Unlocked:</span>
+                              <span className="text-violet-400">{levelsUnlocked}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           })}
         </div>
-        </div>
       </div>
 
-      {/* Node Details */}
-      {selectedNode && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 bg-black/30 dark:bg-black/30 light:bg-white/50 backdrop-blur-sm border border-white/10 dark:border-white/10 light:border-indigo-200/50 rounded-xl p-4"
-        >
-          <h3 className="font-bold text-white dark:text-white light:text-slate-800 mb-2">{selectedNode.name}</h3>
-          <p className="text-sm text-gray-300 dark:text-gray-300 light:text-slate-600 mb-3">{selectedNode.description}</p>
-          
-          {/* Enhanced descriptions for checkpoint-related skills */}
-          {selectedNode.id === 'checkpoint_master' && (
-            <div className="mb-3 p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-              <p className="text-xs text-orange-300">
-                💡 Master the checkpoint system: Use "Reset Level" strategically to practice challenges without losing all progress. 
-                Checkpoints save your score at the start of each level!
-              </p>
-            </div>
-          )}
-          
-          {selectedNode.id === 'penalty_resilience' && (
-            <div className="mb-3 p-2 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-              <p className="text-xs text-cyan-300">
-                🛡️ Learn from mistakes: Penalties increase progressively (10→15→20... max 50 points), but they help you learn. 
-                Build resilience and maintain high scores despite setbacks!
-              </p>
-            </div>
-          )}
-          
-          {selectedNode.id === 'adaptive_learner' && (
-            <div className="mb-3 p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
-              <p className="text-xs text-indigo-300">
-                🧠 Smart learning: Use hints effectively, analyze your mistakes, and adapt your coding approach. 
-                The best programmers learn from every attempt!
-              </p>
-            </div>
-          )}
-          
-          {selectedNode.id === 'score_optimizer' && (
-            <div className="mb-3 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-              <p className="text-xs text-emerald-300">
-                📈 Strategic play: Balance speed and accuracy, maintain streaks, and know when to use checkpoint resets. 
-                Optimize your score through smart decision-making!
-              </p>
-            </div>
-          )}
-          
-          {selectedNode.id === 'progression_unlock' && (
-            <div className="mb-3 p-2 bg-violet-500/10 border border-violet-500/20 rounded-lg">
-              <p className="text-xs text-violet-300">
-                🔒 <strong>Level Progression:</strong> Complete all challenges in a level to unlock the next. 
-                Only the first level is unlocked by default. Progress through levels sequentially!
-              </p>
-            </div>
-          )}
-          
-          {selectedNode.id === 'reset_strategist' && (
-            <div className="mb-3 p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-              <p className="text-xs text-rose-300">
-                🔄 <strong>Reset Strategy:</strong> Know when to use "Reset Level" (checkpoint) vs "Reset All" (complete reset). 
-                Strategic resets can save time and reduce frustration!
-              </p>
-            </div>
-          )}
-          
-          {/* Reset and penalty system tips */}
-          {selectedNode.resetRelated && !selectedNode.id.includes('score_optimizer') && !selectedNode.id.includes('reset_strategist') && (
-            <div className="mb-3 p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-              <p className="text-xs text-orange-300">
-                ♻️ <strong>Reset System:</strong> Use "Reset Level" for minor issues, "Reset All" for major setbacks. 
-                Master the art of strategic recovery!
-              </p>
-            </div>
-          )}
-          
-          {selectedNode.penaltyRelated && !selectedNode.id.includes('penalty_resilience') && (
-            <div className="mb-3 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-xs text-red-300">
-                ⚠️ <strong>Penalty System:</strong> Track penalty accumulation. Progressive penalties help learning but affect scores. 
-                Build resilience and learn from mistakes!
-              </p>
-            </div>
-          )}
-          
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Challenges:</span>
-              <span className={`${playerStats.challenges_completed >= selectedNode.requiredChallenges ? 'text-green-400' : 'text-red-400'}`}>
-                {playerStats.challenges_completed}/{selectedNode.requiredChallenges}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Score:</span>
-              <span className={`${playerStats.total_score >= selectedNode.requiredScore ? 'text-green-400' : 'text-red-400'}`}>
-                {playerStats.total_score.toLocaleString()}/{selectedNode.requiredScore.toLocaleString()}
-              </span>
-            </div>
-            
-            {/* Enhanced metrics for system-related skills */}
-            {(selectedNode.resetRelated || selectedNode.penaltyRelated || selectedNode.progressionRelated) && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Levels Completed:</span>
-                  <span className="text-blue-400">{playerStats.levels_completed}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Max Streak:</span>
-                  <span className="text-purple-400">{playerStats.max_streak}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Perfect Submissions:</span>
-                  <span className="text-green-400">{playerStats.perfect_submissions}</span>
-                </div>
-              </>
-            )}
-            
-            {selectedNode.penaltyRelated && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Total Penalties:</span>
-                  <span className="text-red-400">{totalPenalties}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Penalty Resilience:</span>
-                  <span className="text-cyan-400">{penaltyResilience.toFixed(1)}/10</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Current Attempts:</span>
-                  <span className="text-orange-400">{currentAttempts}</span>
-                </div>
-              </>
-            )}
-            
-            {selectedNode.resetRelated && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Checkpoint Efficiency:</span>
-                  <span className="text-orange-400">{(checkpointEfficiency * 100).toFixed(0)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Current Checkpoint:</span>
-                  <span className="text-blue-400">{checkpointScore.toLocaleString()}</span>
-                </div>
-              </>
-            )}
-            
-            {selectedNode.progressionRelated && (
-              <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-gray-400 light:text-slate-600">Levels Unlocked:</span>
-                <span className="text-violet-400">{levelsUnlocked}</span>
-              </div>
-            )}
-            
-            <div className="text-center mt-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${ 
-                getNodeState(selectedNode) === 'mastered' ? 'bg-green-500/20 text-green-400' :
-                getNodeState(selectedNode) === 'unlocked' ? 'bg-blue-500/20 text-blue-400' :
-                'bg-gray-500/20 text-gray-400'
-              }`}>
-                {getNodeState(selectedNode).toUpperCase()}
-              </span>
-            </div>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 };
