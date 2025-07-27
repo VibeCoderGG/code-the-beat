@@ -16,6 +16,7 @@ import { ProgressTracker } from './components/ProgressTracker';
 import { DashboardModal } from './components/DashboardModal';
 import { LevelProgress } from './components/LevelProgress';
 import { OnboardingTour } from './components/OnboardingTour';
+import { MobileWarning } from './components/MobileWarning';
 import { Achievement } from './types/game';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
   const [showAchievementBonus, setShowAchievementBonus] = useState(false);
   const [lastSolvedChallenge, setLastSolvedChallenge] = useState<{level: number, challenge: number} | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showMobileWarning, setShowMobileWarning] = useState(true);
 
   // Load shown achievements from localStorage on mount
   useEffect(() => {
@@ -516,6 +518,13 @@ function App() {
       {/* Onboarding Tour */}
       {showOnboarding && (
         <OnboardingTour onComplete={() => setShowOnboarding(false)} />
+      )}
+
+      {/* Mobile Warning */}
+      {showMobileWarning && (
+        <MobileWarning 
+          onContinueAnyway={() => setShowMobileWarning(false)} 
+        />
       )}
     </div>
   );
