@@ -143,8 +143,8 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
     if (step.position === 'center') {
       return {
         position: 'fixed' as const,
-        top: '50%',
-        left: '50%',
+        top: '30%',
+        left: '38%',
         transform: 'translate(-50%, -50%)',
         zIndex: 62,
         maxWidth: '90vw',
