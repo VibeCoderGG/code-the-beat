@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award } from 'lucide-react';
+import { RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award, Menu, X, Code2 } from 'lucide-react';
 import { useMultiLanguageGameEngine } from './hooks/useMultiLanguageGameEngine';
 import { useAchievements } from './hooks/useAchievements';
 import { TopBar } from './components/TopBar';
@@ -32,6 +32,7 @@ function App() {
   const [lastSolvedChallenge, setLastSolvedChallenge] = useState<{level: number, challenge: number} | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showMobileWarning, setShowMobileWarning] = useState(true);
+  const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
 
   // Load shown achievements from localStorage on mount
   useEffect(() => {
@@ -194,7 +195,132 @@ function App() {
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Enhanced Header */}
         
-        <div className="bg-black/20 dark:bg-black/20 light:bg-white/80 backdrop-blur-md border-b border-white/10 dark:border-white/10 light:border-indigo-200/50 px-6 py-4">
+      {/* Mobile Navbar */}
+      <div className="block sm:hidden w-full px-4 pt-4 pb-2 bg-black/30 dark:bg-black/30 light:bg-white/80 backdrop-blur-md border-b border-white/10 dark:border-white/10 light:border-indigo-200/50">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 dark:from-purple-400 dark:to-pink-400 light:from-indigo-600 light:to-purple-600 bg-clip-text text-transparent">Code the Beat</h1>
+          <button
+            onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
+            className="p-2 bg-black/40 dark:bg-black/40 light:bg-white/70 rounded-lg"
+          >
+            {showHamburgerMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+        <div className="flex items-center justify-center space-x-3 mb-1">
+          <span className="flex items-center bg-black/40 dark:bg-black/40 light:bg-white/70 rounded-lg px-3 py-1 text-sm font-semibold">
+            <Star className="w-4 h-4 text-yellow-400 mr-1" />
+            {playerStats.total_score.toLocaleString()} pts
+          </span>
+          <span className="flex items-center bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg px-3 py-1 text-xs font-medium">
+            {getUnlockProgress && getUnlockProgress().nextLevelToUnlock ? (
+              getUnlockProgress().questionsToNextUnlock > 0
+                ? `Level ${getUnlockProgress().nextLevelToUnlock} locked`
+                : `Level ${getUnlockProgress().nextLevelToUnlock} unlocked!`
+            ) : 'Level 1 unlocked!'}
+          </span>
+        </div>
+        
+        {/* Hamburger Menu Dropdown */}
+        <AnimatePresence>
+          {showHamburgerMenu && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-2 bg-black/50 dark:bg-black/50 light:bg-white/80 backdrop-blur-md rounded-xl border border-white/10 dark:border-white/10 light:border-indigo-200/50 p-3"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    resetToCheckpoint();
+                    setShowHamburgerMenu(false);
+                    alert("🔄 Level restarted!\n\nYou're back at the start of this level with your checkpoint score.");
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span className="font-medium">Restart Level</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    handleRestart();
+                    setShowHamburgerMenu(false);
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span className="font-medium">Reset All</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowLevelSelector(true);
+                    setShowHamburgerMenu(false);
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span className="font-medium">Levels</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowDashboard(true);
+                    markAchievementsAsSeen();
+                    setShowHamburgerMenu(false);
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm relative"
+                >
+                  <Award className="w-4 h-4" />
+                  <span className="font-medium">Dashboard</span>
+                  {getUnseenAchievements().length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                      {getUnseenAchievements().length}
+                    </span>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowLeaderboard(true);
+                    setShowHamburgerMenu(false);
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span className="font-medium">Leaderboard</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowLanguageSelector(true);
+                    setShowHamburgerMenu(false);
+                  }}
+                  className="flex items-center justify-center space-x-2 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
+                >
+                  <Code2 className="w-4 h-4" />
+                  <span className="font-medium">{selectedLanguage.charAt(0).toUpperCase() + selectedLanguage.slice(1)}</span>
+                </button>
+                
+                {playerStats.total_score > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowScoreSubmission(true);
+                      setShowHamburgerMenu(false);
+                    }}
+                    className="flex items-center justify-center space-x-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 hover:from-green-500/30 hover:to-blue-500/30 border border-green-500/30 text-green-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    <span className="font-medium">Submit Score</span>
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>        {/* Desktop Header */}
+        <div className="hidden sm:block bg-black/20 dark:bg-black/20 light:bg-white/80 backdrop-blur-md border-b border-white/10 dark:border-white/10 light:border-indigo-200/50 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
@@ -262,7 +388,7 @@ function App() {
             </div>
           </div>
         </div>
-        <div className="bg-black/30 dark:bg-black/30 light:bg-white/80 backdrop-blur-md border-t border-white/10 dark:border-white/10 light:border-indigo-200/50 px-6 py-4">
+        <div className="hidden sm:block bg-black/30 dark:bg-black/30 light:bg-white/80 backdrop-blur-md border-t border-white/10 dark:border-white/10 light:border-indigo-200/50 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {/* Game Controls */}
@@ -349,7 +475,48 @@ function App() {
 
         {/* Level Info Bar */}
         <div className="bg-black/10 dark:bg-black/10 light:bg-white/60 backdrop-blur-sm border-b border-white/5 dark:border-white/5 light:border-indigo-200/30 px-6 py-3">
-          <div className="flex items-center justify-between">
+          {/* Mobile Layout */}
+          <div className="block sm:hidden">
+            <div className="flex flex-col items-center justify-center text-center space-y-2">
+              {/* Level Number - Centered */}
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full text-lg font-bold">
+                Level {currentLevel.id}
+              </div>
+              
+              {/* Title - Under Level */}
+              <div className="text-white dark:text-white light:text-slate-800 font-semibold text-lg">
+                {currentLevel.title}
+              </div>
+              
+              {/* Description - Under Title */}
+              <div className="text-gray-400 dark:text-gray-400 light:text-slate-600 text-sm max-w-xs">
+                {currentLevel.description}
+              </div>
+              
+              {/* Grid for Checkpoint and Difficulty */}
+              <div className="grid grid-cols-2 gap-3 mt-3 w-full max-w-xs">
+                {/* Checkpoint indicator */}
+                {levelCheckpoints && levelCheckpoints[currentLevel.id] !== undefined && (
+                  <div className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-2 rounded-lg text-xs font-medium text-center">
+                    <div className="text-xs opacity-75">Checkpoint:</div>
+                    <div className="font-bold">{levelCheckpoints[currentLevel.id]?.toLocaleString() || 0}</div>
+                  </div>
+                )}
+                
+                <div className={`px-3 py-2 rounded-lg text-xs font-medium text-center ${
+                  currentLevel.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                  currentLevel.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                  'bg-red-500/20 text-red-400 border border-red-500/30'
+                }`}>
+                  <div className="text-xs opacity-75">Difficulty:</div>
+                  <div className="font-bold capitalize">{currentLevel.difficulty}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                 Level {currentLevel.id}
@@ -400,7 +567,7 @@ function App() {
             </div>
             
             {/* Side Panel - Progress Tracker */}
-            <div className="progress-tracker w-80 bg-black/20 dark:bg-black/20 light:bg-white/70 backdrop-blur-sm border-l border-white/10 dark:border-white/10 light:border-indigo-200/50">
+            <div className="hidden sm:block progress-tracker w-80 bg-black/20 dark:bg-black/20 light:bg-white/70 backdrop-blur-sm border-l border-white/10 dark:border-white/10 light:border-indigo-200/50">
               <div className="p-4 h-full">
                 <h2 className="text-lg font-bold text-white dark:text-white light:text-slate-800 mb-4 flex items-center space-x-2">
                   <Star className="w-5 h-5 text-yellow-400" />
@@ -416,7 +583,7 @@ function App() {
           </div>
           
           {/* Bottom Row - All Levels Leaderboard (Full Width) */}
-          <div className="h-80 border-t border-white/10 dark:border-white/10 light:border-indigo-200/30 bg-black/10 dark:bg-black/10 light:bg-white/50 backdrop-blur-sm">
+          <div className="h-[600px] sm:h-200 border-t border-white/10 dark:border-white/10 light:border-indigo-200/30 bg-black/10 dark:bg-black/10 light:bg-white/50 backdrop-blur-sm">
             <AllLevelsLeaderboard currentLevelId={currentLevel.id} />
           </div>
         </div>

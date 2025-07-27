@@ -89,48 +89,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowHint(!showHint)}
-            className={`hint-button flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
-              showHint 
-                ? 'bg-yellow-500/30 border border-yellow-500/50 text-yellow-300' 
-                : 'bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-400'
-            }`}
-          >
-            <Lightbulb className="w-4 h-4" />
-            <span className="font-medium">Hint</span>
-          </motion.button>
-          
-          {onSkipQuestion && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onSkipQuestion}
-              className="skip-button flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 font-medium bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400"
-            >
-              <SkipForward className="w-4 h-4" />
-              <span>Skip</span>
-            </motion.button>
-          )}
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSubmit}
-            disabled={!gameState.userCode.trim()}
-            className={`flex items-center space-x-2 px-6 py-2 rounded-xl transition-all duration-200 font-medium ${
-              gameState.userCode.trim()
-                ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400'
-                : 'bg-gray-500/20 border border-gray-500/30 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-            <span>Submit Code</span>
-          </motion.button>
-        </div>
+        {/* Buttons moved below - removed from header */}
       </div>
       
       {/* Hint Panel */}
@@ -238,6 +197,50 @@ export const CodeInput: React.FC<CodeInputProps> = ({
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Control Buttons - Moved below code editor */}
+      <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowHint(!showHint)}
+          className={`hint-button flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 rounded-xl transition-all duration-200 text-sm sm:text-base flex-1 sm:flex-none min-w-0 ${
+            showHint 
+              ? 'bg-yellow-500/30 border border-yellow-500/50 text-yellow-300' 
+              : 'bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-400'
+          }`}
+        >
+          <Lightbulb className="w-4 h-4 flex-shrink-0" />
+          <span className="font-medium truncate">Hint</span>
+        </motion.button>
+        
+        {onSkipQuestion && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onSkipQuestion}
+            className="skip-button flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 rounded-xl transition-all duration-200 font-medium bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 text-sm sm:text-base flex-1 sm:flex-none min-w-0"
+          >
+            <SkipForward className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Skip</span>
+          </motion.button>
+        )}
+        
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleSubmit}
+          disabled={!gameState.userCode.trim()}
+          className={`flex items-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2 rounded-xl transition-all duration-200 font-medium text-sm sm:text-base flex-1 sm:flex-none min-w-0 ${
+            gameState.userCode.trim()
+              ? 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400'
+              : 'bg-gray-500/20 border border-gray-500/30 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          <Send className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">Submit Code</span>
+        </motion.button>
       </div>
       
       {/* AI Hints */}
