@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, X, Play, Code, Trophy, Target, Music } from 'lucide-react';
+import { ArrowRight, ArrowLeft, X, Code, Trophy, Target, Music } from 'lucide-react';
 
 interface OnboardingStep {
   id: string;
@@ -19,9 +19,17 @@ const onboardingSteps: OnboardingStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to Code the Beat! 🎵',
-    description: 'A rhythm-based coding game where you solve programming challenges while staying in sync with the beat!',
+    description: 'A coding game where you solve programming challenges in multiple languages!',
     icon: <Music className="w-6 h-6" />,
     position: 'center'
+  },
+  {
+    id: 'language-selector',
+    title: 'Choose Your Language 🔧',
+    description: 'Start by selecting your preferred programming language from the dropdown. You can switch languages anytime!',
+    target: '.language-selector',
+    icon: <Code className="w-6 h-6" />,
+    position: 'bottom-left'
   },
   {
     id: 'score-display',
@@ -32,17 +40,9 @@ const onboardingSteps: OnboardingStep[] = [
     position: 'bottom-left'
   },
   {
-    id: 'play-button',
-    title: 'Start the Beat 🎮',
-    description: 'Click this button to start the rhythm! The beat will help you stay focused while coding.',
-    target: '.play-button',
-    icon: <Play className="w-6 h-6" />,
-    position: 'bottom-right'
-  },
-  {
     id: 'code-editor',
     title: 'Code Editor 💻',
-    description: 'Write your JavaScript code here to solve the challenges. The prompt will tell you what to create!',
+    description: 'Write your code here to solve the challenges. The prompt will tell you what to create!',
     target: '.code-editor',
     icon: <Code className="w-6 h-6" />,
     position: 'top-right'

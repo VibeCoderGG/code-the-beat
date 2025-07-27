@@ -7,7 +7,7 @@ import { getLeaderboardByLevel, LeaderboardEntry } from '../lib/supabase';
 interface BeatLineProps {
   gameState: GameState;
   currentLevel: Level;
-  getCurrentChallenge?: () => Challenge;
+  getCurrentChallenge?: () => Challenge | null;
 }
 
 export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel, getCurrentChallenge }) => {
@@ -27,11 +27,17 @@ export const BeatLine: React.FC<BeatLineProps> = ({ gameState, currentLevel, get
     if (getCurrentChallenge) {
       // Use the randomized challenge order
       const challenge = getCurrentChallenge();
-      setCurrentPrompt(challenge.prompt);
+      if (challenge) {
+        setCurrentPrompt(challenge.prompt);
+      } else {
+        setCurrentPrompt('Loading challenge...');
+      }
     } else {
       // Fallback to sequential order
       if (currentLevel.challenges[gameState.currentChallenge]) {
         setCurrentPrompt(currentLevel.challenges[gameState.currentChallenge].prompt);
+      } else {
+        setCurrentPrompt('Loading challenge...');
       }
     }
   }, [currentLevel.challenges, gameState.currentChallenge, getCurrentChallenge]);

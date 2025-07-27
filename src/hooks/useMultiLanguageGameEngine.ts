@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import * as Tone from 'tone';
 import { GameState, Level, Challenge } from '../types/game';
 import { enhancedMultiLanguageLevels, getChallengesForLanguageWithAST } from '../data/enhancedMultiLanguageLevels';
 import { PatternValidator } from '../utils/patternValidation';
@@ -25,7 +24,6 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
   const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]);
   const [levelCheckpoints, setLevelCheckpoints] = useState<{[levelId: number]: number}>({ 1: 0 });
   const [randomizedChallengeOrders, setRandomizedChallengeOrders] = useState<{[key: string]: number[]}>({});
-  const synthRef = useRef<Tone.Synth | null>(null);
   const beatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const playerName = getOrCreatePlayerName();
@@ -76,10 +74,44 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
 
   // Function to get the current challenge based on randomized order
   const getCurrentChallenge = useCallback(() => {
-    const randomOrder = getRandomizedChallengeOrder(gameState.currentLevel);
-    const actualChallengeIndex = randomOrder[gameState.currentChallenge];
-    const currentLangLevel = languageAwareLevels()[gameState.currentLevel];
-    return currentLangLevel.challenges[actualChallengeIndex];
+    try {
+      const langAwareLevels = languageAwareLevels();
+      
+      // Check if current level exists
+      if (gameState.currentLevel >= langAwareLevels.length) {
+        console.error('Current level index out of bounds:', gameState.currentLevel);
+        return null;
+      }
+      
+      const currentLangLevel = langAwareLevels[gameState.currentLevel];
+      
+      // Check if level has challenges
+      if (!currentLangLevel || !currentLangLevel.challenges || currentLangLevel.challenges.length === 0) {
+        console.error('No challenges found for current level:', currentLangLevel);
+        return null;
+      }
+      
+      const randomOrder = getRandomizedChallengeOrder(gameState.currentLevel);
+      
+      // Check if challenge index is valid
+      if (gameState.currentChallenge >= randomOrder.length) {
+        console.error('Current challenge index out of bounds:', gameState.currentChallenge);
+        return null;
+      }
+      
+      const actualChallengeIndex = randomOrder[gameState.currentChallenge];
+      
+      // Check if actual challenge exists
+      if (actualChallengeIndex >= currentLangLevel.challenges.length) {
+        console.error('Actual challenge index out of bounds:', actualChallengeIndex);
+        return null;
+      }
+      
+      return currentLangLevel.challenges[actualChallengeIndex];
+    } catch (error) {
+      console.error('Error getting current challenge:', error);
+      return null;
+    }
   }, [gameState.currentLevel, gameState.currentChallenge, getRandomizedChallengeOrder, languageAwareLevels]);
 
   // Update current level when language changes
@@ -125,44 +157,15 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
     }
   }, [selectedLanguage, languageAwareLevels]);
 
-  // Setup Tone.js synth
+  // Disabled audio setup since we removed the start button
   useEffect(() => {
-    const synthInstance = new Tone.Synth().toDestination();
-    synthRef.current = synthInstance;
-
-    return () => {
-      synthRef.current?.dispose();
-      if (beatIntervalRef.current) clearInterval(beatIntervalRef.current);
-    };
+    // No audio setup needed
   }, []);
 
   const startGame = useCallback(async () => {
-    try {
-      if (Tone.context.state !== 'running') {
-        try {
-          await Tone.start();
-        } catch (error) {
-          console.warn('AudioContext not allowed yet, will start without audio:', error);
-        }
-      }
-
-      setGameState(prev => ({ ...prev, isPlaying: true, beatCount: 0 }));
-
-      const beatInterval = (60 / currentLevel.tempo) * 1000;
-      beatIntervalRef.current = setInterval(() => {
-        setGameState(prev => ({
-          ...prev,
-          beatCount: prev.beatCount + 1
-        }));
-        if (Tone.context.state === 'running') {
-          synthRef.current?.triggerAttackRelease('C4', '8n');
-        }
-      }, beatInterval);
-    } catch (error) {
-      console.error('Failed to start game:', error);
-      setGameState(prev => ({ ...prev, isPlaying: true, beatCount: 0 }));
-    }
-  }, [currentLevel.tempo]);
+    // Since we removed the start button, we'll just set playing state without audio
+    setGameState(prev => ({ ...prev, isPlaying: true, beatCount: 0 }));
+  }, []);
 
   const stopGame = useCallback(() => {
     if (beatIntervalRef.current) clearInterval(beatIntervalRef.current);
@@ -171,6 +174,18 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
 
   const submitCode = useCallback((code: string) => {
     const challenge = getCurrentChallenge();
+    
+    // Add null check for challenge
+    if (!challenge) {
+      console.error('No challenge found for current state');
+      setGameState(prev => ({
+        ...prev,
+        feedback: 'Error: No challenge found. Please try refreshing the page.',
+        showFeedback: true,
+        attempts: prev.attempts + 1
+      }));
+      return;
+    }
     
     // Use pattern validation for all languages
     let validationResult;

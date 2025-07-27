@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award, Code } from 'lucide-react';
+import { RotateCcw, BookOpen, Trophy, Zap, Music, Star, Award } from 'lucide-react';
 import { useMultiLanguageGameEngine } from './hooks/useMultiLanguageGameEngine';
 import { useAchievements } from './hooks/useAchievements';
 import { TopBar } from './components/TopBar';
@@ -53,8 +53,6 @@ function App() {
   const {
     gameState,
     currentLevel,
-    startGame,
-    stopGame,
     submitCode,
     skipQuestion,
     changeLevel,
@@ -257,8 +255,7 @@ function App() {
                 currentLevel={currentLevel}
                 selectedLanguage={selectedLanguage}
                 onLanguageChange={setSelectedLanguage}
-                onStartGame={startGame}
-                onStopGame={stopGame}
+                onOpenLanguageSelector={() => setShowLanguageSelector(true)}
               />
             </div>
           </div>
@@ -267,20 +264,6 @@ function App() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {/* Game Controls */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={gameState.isPlaying ? stopGame : startGame}
-                className={`play-button flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
-                  gameState.isPlaying 
-                    ? 'bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400' 
-                    : 'bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400'
-                }`}
-              >
-                {gameState.isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                <span className="font-medium">{gameState.isPlaying ? 'Stop' : 'Start'}</span>
-              </motion.button>
-              
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -308,16 +291,6 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-3">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowLanguageSelector(true)}
-                className="language-button flex items-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-xl transition-all duration-200"
-              >
-                <Code className="w-4 h-4" />
-                <span className="font-medium">{selectedLanguage.charAt(0).toUpperCase() + selectedLanguage.slice(1)}</span>
-              </motion.button>
-              
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

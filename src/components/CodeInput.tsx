@@ -11,7 +11,7 @@ interface CodeInputProps {
   onSubmitCode: (code: string) => void;
   onUpdateCode: (code: string) => void;
   onSkipQuestion?: () => void;
-  getCurrentChallenge?: () => Challenge;
+  getCurrentChallenge?: () => Challenge | null;
 }
 
 export const CodeInput: React.FC<CodeInputProps> = ({
@@ -39,6 +39,20 @@ export const CodeInput: React.FC<CodeInputProps> = ({
     const lines = gameState.userCode.split('\n').length;
     setLineNumbers(lines);
   }, [gameState.userCode]);
+
+  // Add safety check for challenge after hooks
+  if (!currentChallenge) {
+    return (
+      <div className="flex-1 bg-black/20 dark:bg-black/20 light:bg-white/60 backdrop-blur-sm p-6 min-h-0 flex flex-col">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center text-white dark:text-white light:text-slate-800">
+            <p className="text-lg font-semibold mb-2">Loading challenge...</p>
+            <p className="text-sm text-gray-400">Please wait while we load the next challenge.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = () => {
     if (gameState.userCode.trim()) {
