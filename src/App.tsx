@@ -699,16 +699,16 @@ function App() {
         onClose={() => setNewAchievement(null)}
       />
 
-      {/* Onboarding Tour */}
-      {showOnboarding && (
-        <OnboardingTour onComplete={() => setShowOnboarding(false)} />
-      )}
-
-      {/* Mobile Warning */}
-      {showMobileWarning && (
+      {/* Mobile Warning - Only show if onboarding is not active */}
+      {showMobileWarning && !showOnboarding && (
         <MobileWarning 
           onContinueAnyway={() => setShowMobileWarning(false)} 
         />
+      )}
+
+      {/* Onboarding Tour - Higher priority than mobile warning */}
+      {showOnboarding && (
+        <OnboardingTour onComplete={() => setShowOnboarding(false)} />
       )}
     </div>
   );

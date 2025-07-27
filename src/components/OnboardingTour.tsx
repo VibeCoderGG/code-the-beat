@@ -121,23 +121,41 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
   const step = onboardingSteps[currentStep];
 
   const getModalPosition = () => {
-    // Force center position for steps that specify center position
-    if (step.position === 'center') {
+    const isMobile = window.innerWidth < 640; // sm breakpoint
+    // For mobile, always center modals and ensure they never overflow
+    if (isMobile) {
       return {
         position: 'fixed' as const,
-        top: '30%',
-        left: '38%',
+        top: '25%',
+        left: '5%',
         transform: 'translate(-50%, -50%)',
-        zIndex: 52,
-        maxWidth: '90vw',
-        width: '400px' // Fixed width for center modals
+        zIndex: 62,
+        width: '85vw',
+        maxWidth: '85vw',
+        minWidth: '0',
+        margin: '0',
+        padding: '0',
+        overflow: 'hidden',
       };
     }
     
-    // If we have a highlighted element, position relative to it
+    // Force center position for steps that specify center position (desktop)
+    if (step.position === 'center') {
+      return {
+        position: 'fixed' as const,
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 62,
+        maxWidth: '90vw',
+        width: '400px'
+      };
+    }
+    
+    // If we have a highlighted element, position relative to it (desktop only)
     if (spotlightRect && step.target) {
-      const modalWidth = 400; // Increased modal width
-      const modalHeight = 280; // Increased modal height  
+      const modalWidth = 400;
+      const modalHeight = 280;  
       const spacing = 20; // Space between element and modal
       
       const elementCenterX = spotlightRect.left + spotlightRect.width / 2;
@@ -184,7 +202,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
         left: `${left}px`,
         top: `${top}px`,
         transform: '',
-        zIndex: 52,
+        zIndex: 62,
         width: `${modalWidth}px`
       };
     }
@@ -214,20 +232,20 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
           left: `${left}px`,
           top: `${top}px`,
           transform: '',
-          zIndex: 51
+          zIndex: 61
         };
       }
     }
     
-    // Fallback to center for non-targeted steps or center position steps
+    // Fallback to center for non-targeted steps or center position steps (desktop)
     return {
       position: 'fixed' as const,
-      top: '25%',
-      left: '25%',
+      top: '50%',
+      left: '50%',
       transform: 'translate(-50%, -50%)',
-      zIndex: 51,
-      maxWidth: '90vw', // Ensure it doesn't go off screen on small devices
-      width: '400px' // Fixed width for center modals
+      zIndex: 61,
+      maxWidth: '90vw',
+      width: '400px'
     };
   };
 
@@ -264,6 +282,16 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
     <AnimatePresence>
       {isVisible && (
         <>
+          {/* Dark Overlay - Only for Welcome Step */}
+          {step.id === 'welcome' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm"
+            />
+          )}
+          
           {/* Tour Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -271,38 +299,40 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
             style={getModalPosition()}
-            className="max-w-md"
+            className="w-full max-w-full sm:mx-0 px-2"
           >
-            <div className="bg-gradient-to-br from-indigo-900/98 to-purple-900/98 backdrop-blur-md border border-indigo-500/40 rounded-2xl p-6 shadow-2xl">
+            <div className="bg-gradient-to-br from-indigo-900/98 to-purple-900/98 backdrop-blur-md border border-indigo-500/40 rounded-2xl p-4 sm:p-6 shadow-2xl w-full max-w-full overflow-x-auto">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-indigo-500/20 p-2 rounded-lg">
-                    {step.icon}
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                  <div className="bg-indigo-500/20 p-1.5 sm:p-2 rounded-lg flex-shrink-0">
+                    {React.cloneElement(step.icon as React.ReactElement, {
+                      className: "w-4 h-4 sm:w-6 sm:h-6"
+                    })}
                   </div>
-                  <h2 className="text-xl font-bold text-white">{step.title}</h2>
+                  <h2 className="text-base sm:text-xl font-bold text-white truncate">{step.title}</h2>
                 </div>
                 <button
                   onClick={handleSkip}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-white transition-colors flex-shrink-0 ml-2"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
 
               {/* Content */}
-              <p className="text-gray-200 mb-6 leading-relaxed">
+              <p className="text-gray-200 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base">
                 {step.description}
               </p>
 
               {/* Progress Indicator */}
-              <div className="flex items-center space-x-2 mb-6">
+              <div className="flex items-center justify-center space-x-1.5 sm:space-x-2 mb-4 sm:mb-6">
                 {onboardingSteps.map((_, index) => (
                   <div
                     key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${
                       index === currentStep
-                        ? 'bg-indigo-400 w-6'
+                        ? 'bg-indigo-400 w-4 sm:w-6'
                         : index < currentStep
                         ? 'bg-green-400'
                         : 'bg-gray-600'
@@ -312,30 +342,31 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete }) =>
               </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <button
                   onClick={handlePrevious}
                   disabled={currentStep === 0}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
                     currentStep === 0
                       ? 'text-gray-500 cursor-not-allowed'
                       : 'text-white hover:bg-white/10'
                   }`}
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Previous</span>
+                  <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                 </button>
 
-                <div className="text-sm text-gray-400">
+                <div className="text-xs sm:text-sm text-gray-400">
                   {currentStep + 1} of {onboardingSteps.length}
                 </div>
 
                 <button
                   onClick={handleNext}
-                  className="flex items-center space-x-2 px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 font-medium"
+                  className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 font-medium text-sm sm:text-base"
                 >
-                  <span>{currentStep === onboardingSteps.length - 1 ? 'Get Started!' : 'Next'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>{currentStep === onboardingSteps.length - 1 ? 'Start!' : 'Next'}</span>
+                  <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
