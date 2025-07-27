@@ -68,21 +68,21 @@ export class PatternValidator {
     python: [
       {
         type: 'variable',
-        pattern: /^\s*\w+\s*=\s*.+$/m,
+        pattern: /^\s*[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*\S+/m,
         description: 'Variable assignment',
-        points: 10
+        points: 20
       },
       {
         type: 'function',
         pattern: /def\s+\w+\s*\([^)]*\)\s*:/,
         description: 'Function definition',
-        points: 20
+        points: 25
       },
       {
         type: 'if',
         pattern: /if\s+.+\s*:/,
         description: 'If statement',
-        points: 15
+        points: 20
       }
     ],
     java: [
@@ -202,21 +202,25 @@ export class PatternValidator {
       }
     }
 
+    // For simple challenges, if we found at least one pattern, consider it valid
+    const hasAnyValidPattern = foundPatterns.length > 0;
     const totalPossibleScore = patterns.reduce((sum, p) => sum + p.points, 0);
     const percentage = totalPossibleScore > 0 ? Math.round((score / totalPossibleScore) * 100) : 0;
     
     let feedback = "";
     if (foundPatterns.length > 0) {
-      feedback += `✅ Found: ${foundPatterns.join(", ")}. `;
-    }
-    if (missedPatterns.length > 0) {
-      feedback += `❌ Missing: ${missedPatterns.join(", ")}.`;
+      feedback += `✅ Found: ${foundPatterns.join(", ")}`;
+      if (missedPatterns.length > 0 && patterns.length > 1) {
+        feedback += `. Optional: ${missedPatterns.join(", ")}`;
+      }
+    } else {
+      feedback += `❌ Missing: ${missedPatterns.join(", ")}`;
     }
 
     return {
-      isValid: percentage >= 50,
+      isValid: hasAnyValidPattern && percentage >= 30, // Lower threshold for simple challenges
       feedback: feedback || "Great job!",
-      score: percentage
+      score: Math.max(percentage, hasAnyValidPattern ? 50 : 0) // Minimum 50% if any pattern matches
     };
   }
 

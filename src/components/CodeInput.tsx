@@ -151,6 +151,31 @@ export const CodeInput: React.FC<CodeInputProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Feedback - Moved here between buttons and code editor */}
+      <AnimatePresence>
+        {gameState.showFeedback && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`mb-4 p-4 rounded-xl border backdrop-blur-sm ${
+              gameState.feedback.includes('Perfect') || gameState.feedback.includes('Correct')
+                ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                : 'bg-red-500/10 border-red-500/30 text-red-300'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              {gameState.feedback.includes('Perfect') || gameState.feedback.includes('Correct') ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-400" />
+              )}
+              <span className="font-medium">{gameState.feedback}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Code Editor */}
       <div className="flex-1 bg-black/40 dark:bg-black/40 light:bg-white/80 backdrop-blur-sm rounded-xl border border-white/10 dark:border-white/10 light:border-indigo-200/50 overflow-hidden shadow-2xl flex flex-col min-h-0">
@@ -200,31 +225,6 @@ export const CodeInput: React.FC<CodeInputProps> = ({
           </div>
         </div>
       </div>
-      
-      {/* Feedback */}
-      <AnimatePresence>
-        {gameState.showFeedback && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`mt-4 p-4 rounded-xl border backdrop-blur-sm ${
-              gameState.feedback.includes('Perfect') || gameState.feedback.includes('Correct')
-                ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                : 'bg-red-500/10 border-red-500/30 text-red-300'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              {gameState.feedback.includes('Perfect') || gameState.feedback.includes('Correct') ? (
-                <CheckCircle className="w-5 h-5 text-green-400" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-400" />
-              )}
-              <span className="font-medium">{gameState.feedback}</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       
       {/* AI Hints */}
       <div className="mt-4">
