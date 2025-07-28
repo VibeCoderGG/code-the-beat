@@ -22,7 +22,7 @@ export const LevelProgress: React.FC<LevelProgressProps> = ({
   getUnlockProgress
 }) => {
   const challengeProgress = ((gameState.currentChallenge + 1) / currentLevel.challenges.length) * 100;
-  const overallProgress = ((gameState.currentLevel + (gameState.currentChallenge + 1) / currentLevel.challenges.length) / levels.length) * 100;
+  const overallProgress = ((gameState.currentLevel + gameState.currentChallenge / currentLevel.challenges.length) / levels.length) * 100;
   
   // Get unlock progress if function is provided
   const unlockProgress = getUnlockProgress ? getUnlockProgress() : null;
