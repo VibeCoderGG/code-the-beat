@@ -77,7 +77,6 @@ function App() {
     resetAllProgress,
     markAchievementsAsSeen,
     getUnseenAchievements,
-    addAchievementPoints,
     updateGameScore
   } = useAchievements();
 
@@ -109,32 +108,32 @@ function App() {
         
         const newAchievements = checkAchievements();
         if (newAchievements.length > 0) {
-          const achievement = newAchievements[0];
-          
-          // Show achievement notification only if not shown before
-          if (!shownAchievements.has(achievement.id)) {
-            setNewAchievement(achievement);
-            const newShownSet = new Set([...shownAchievements, achievement.id]);
-            setShownAchievements(newShownSet);
-            
-            // Save to localStorage
-            localStorage.setItem('shownAchievements', JSON.stringify([...newShownSet]));
-            
-            // Add achievement points
-            addAchievementPoints(achievement.reward.points);
-            
-            // Show achievement bonus indicator
-            setShowAchievementBonus(true);
-            
-            // Hide achievement bonus indicator after 1 second
-            setTimeout(() => {
-              setShowAchievementBonus(false);
-            }, 1000);
+          // Only show the first new achievement that hasn't been shown
+          for (const achievement of newAchievements) {
+            if (!shownAchievements.has(achievement.id)) {
+              setNewAchievement(achievement);
+              const newShownSet = new Set([...shownAchievements, achievement.id]);
+              setShownAchievements(newShownSet);
+              
+              // Save to localStorage
+              localStorage.setItem('shownAchievements', JSON.stringify([...newShownSet]));
+              
+              // Show achievement bonus indicator
+              setShowAchievementBonus(true);
+              
+              // Hide achievement bonus indicator after 1 second
+              setTimeout(() => {
+                setShowAchievementBonus(false);
+              }, 1000);
+              
+              // Only show one achievement at a time
+              break;
+            }
           }
         }
       }
     }
-  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, gameState.feedback, selectedLanguage, updatePlayerStats, updateGameScore, checkAchievements, shownAchievements, addAchievementPoints, lastSolvedChallenge]);
+  }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, gameState.feedback, selectedLanguage, updatePlayerStats, updateGameScore, checkAchievements, shownAchievements, lastSolvedChallenge]);
 
   const handleScoreSubmitted = () => {
     setShowScoreSubmission(false);

@@ -92,6 +92,26 @@ export const CodeInput: React.FC<CodeInputProps> = ({
         {/* Buttons moved below - removed from header */}
       </div>
       
+      {/* Skip Status Indicator */}
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <SkipForward className="w-4 h-4 text-orange-400" />
+            <span className="text-orange-400 font-medium">
+              Skips: {gameState.skipsRemaining}/3
+            </span>
+          </div>
+          {gameState.skipsRemaining < 3 && (
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <span className="text-green-400">
+                {gameState.correctAnswersCount % 5}/5 correct answers to earn skip
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+      
       {/* Hint Panel */}
       <AnimatePresence>
         {showHint && currentChallenge && (
@@ -217,13 +237,22 @@ export const CodeInput: React.FC<CodeInputProps> = ({
         
         {onSkipQuestion && (
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onSkipQuestion}
-            className="skip-button flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 rounded-xl transition-all duration-200 font-medium bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 text-sm sm:text-base flex-1 sm:flex-none min-w-0"
+            whileHover={{ scale: gameState.skipsRemaining > 0 ? 1.05 : 1 }}
+            whileTap={{ scale: gameState.skipsRemaining > 0 ? 0.95 : 1 }}
+            onClick={gameState.skipsRemaining > 0 ? onSkipQuestion : undefined}
+            disabled={gameState.skipsRemaining <= 0}
+            className={`skip-button flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 rounded-xl transition-all duration-200 font-medium text-sm sm:text-base flex-1 sm:flex-none min-w-0 ${
+              gameState.skipsRemaining > 0 
+                ? 'bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-400 cursor-pointer' 
+                : 'bg-gray-500/20 border border-gray-500/30 text-gray-500 cursor-not-allowed opacity-50'
+            }`}
+            title={gameState.skipsRemaining > 0 
+              ? `Skip this question (${gameState.skipsRemaining} skips remaining)` 
+              : 'No skips remaining. Answer 5 questions correctly to earn a skip.'
+            }
           >
             <SkipForward className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">Skip</span>
+            <span className="truncate">Skip ({gameState.skipsRemaining})</span>
           </motion.button>
         )}
         

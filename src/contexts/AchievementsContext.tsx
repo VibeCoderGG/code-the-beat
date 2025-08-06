@@ -119,9 +119,10 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Update total score when achievement points change
   useEffect(() => {
     if (isInitialized) {
+      const newTotalScore = baseGameScore + achievementPoints;
       setPlayerStats(prev => ({
         ...prev,
-        total_score: baseGameScore + achievementPoints
+        total_score: newTotalScore
       }));
     }
   }, [achievementPoints, baseGameScore, isInitialized]);
@@ -209,10 +210,8 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setUnlockedAchievements(prev => [...prev, unlockedAchievement]);
         newlyUnlocked.push(achievement);
         
-        // Add achievement points to stats (but not to game score)
-        if (achievement.reward.points) {
-          addAchievementPoints(achievement.reward.points);
-        }
+        // Add achievement points immediately when achievement is unlocked
+        setAchievementPoints(prev => prev + achievement.reward.points);
       }
     }
 
@@ -230,20 +229,13 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const addAchievementPoints = (points: number) => {
-    // Divide achievement points by 2 before adding them
-    const adjustedPoints = Math.floor(points / 2);
-    setAchievementPoints(prev => prev + adjustedPoints);
+    // Add full achievement points without dividing
+    setAchievementPoints(prev => prev + points);
   };
 
   const updateGameScore = (gameScore: number) => {
     // Update the base game score
     setBaseGameScore(gameScore);
-    
-    // Update the total score to be base game score plus achievement points
-    setPlayerStats(prev => ({
-      ...prev,
-      total_score: gameScore + achievementPoints
-    }));
   };
 
   const resetAllProgress = () => {

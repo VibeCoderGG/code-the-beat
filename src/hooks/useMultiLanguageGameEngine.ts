@@ -17,7 +17,9 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
     feedback: '',
     showFeedback: false,
     attempts: 0,
-    solvedQuestions: 0
+    solvedQuestions: 0,
+    skipsRemaining: 3, // Start with 3 skips per level
+    correctAnswersCount: 0
   });
 
   const [currentLevel, setCurrentLevel] = useState<Level>(enhancedMultiLanguageLevels[0]);
@@ -216,13 +218,28 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
       
       const newScore = gameState.score + totalPoints;
       const newChallengeIndex = gameState.currentChallenge + 1;
+      
+      // Calculate skip reclaim logic
+      const newCorrectAnswersCount = gameState.correctAnswersCount + 1;
+      const shouldReclaimSkip = newCorrectAnswersCount > 0 && newCorrectAnswersCount % 5 === 0;
+      const newSkipsRemaining = shouldReclaimSkip ? gameState.skipsRemaining + 1 : gameState.skipsRemaining;
+      
+      // Create feedback message including skip reclaim notification
+      let feedbackMessage = `${validationResult.feedback} +${totalPoints} points (${streakMultiplier.toFixed(1)}x streak multiplier)`;
+      if (shouldReclaimSkip) {
+        feedbackMessage += ` 🎉 Skip earned! (${newCorrectAnswersCount % 5}/5 correct answers)`;
+      } else if (gameState.skipsRemaining < 3) {
+        feedbackMessage += ` (${newCorrectAnswersCount % 5}/5 correct answers to earn skip)`;
+      }
 
       setGameState(prev => ({
         ...prev,
         score: newScore,
         streak: prev.streak + 1,
         solvedQuestions: prev.solvedQuestions + 1,
-        feedback: `${validationResult.feedback} +${totalPoints} points (${streakMultiplier.toFixed(1)}x streak multiplier)`,
+        correctAnswersCount: newCorrectAnswersCount,
+        skipsRemaining: newSkipsRemaining,
+        feedback: feedbackMessage,
         showFeedback: true,
         attempts: 0
       }));
@@ -294,9 +311,11 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
                 currentLevel: nextLevelIndex,
                 currentChallenge: 0,
                 userCode: '',
-                feedback: `Welcome to Level ${nextLevelIndex + 1}: ${langAwareLevels[nextLevelIndex].title}!`,
+                feedback: `Welcome to Level ${nextLevelIndex + 1}: ${langAwareLevels[nextLevelIndex].title}! You have 3 skips.`,
                 showFeedback: true,
-                beatCount: 0
+                beatCount: 0,
+                skipsRemaining: 3, // Reset skips to 3 for new level
+                correctAnswersCount: 0 // Reset correct answers count
               }));
 
               saveLocalPlayer(playerName, newScore, nextLevelIndex, 0, newUnlockedLevels, levelCheckpoints, randomizedChallengeOrders, gameState.solvedQuestions + 1);
@@ -331,12 +350,28 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
   }, [currentLevel, gameState, stopGame, playerName, unlockedLevels, levelCheckpoints, randomizedChallengeOrders, getCurrentChallenge, languageAwareLevels, selectedLanguage]);
 
   const skipQuestion = useCallback(() => {
+    // Check if player has skips remaining
+    if (gameState.skipsRemaining <= 0) {
+      setGameState(prev => ({
+        ...prev,
+        feedback: '❌ No skips remaining! Answer 5 questions correctly to earn another skip.',
+        showFeedback: true
+      }));
+      
+      setTimeout(() => {
+        setGameState(prev => ({ ...prev, showFeedback: false }));
+      }, 3000);
+      
+      return;
+    }
+
     const newChallengeIndex = gameState.currentChallenge + 1;
 
     setGameState(prev => ({
       ...prev,
       streak: 0,
-      feedback: 'Question skipped! No points awarded.',
+      skipsRemaining: prev.skipsRemaining - 1, // Decrease skips remaining
+      feedback: `Question skipped! No points awarded. Skips remaining: ${prev.skipsRemaining - 1}`,
       showFeedback: true,
       attempts: 0
     }));
@@ -381,7 +416,9 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
         feedback: '',
         showFeedback: false,
         beatCount: 0,
-        attempts: 0
+        attempts: 0,
+        skipsRemaining: 3, // Reset skips to 3 when changing levels
+        correctAnswersCount: 0 // Reset correct answers count
       }));
     }
   }, [stopGame, languageAwareLevels]);
@@ -451,7 +488,9 @@ export const useMultiLanguageGameEngine = (selectedLanguage: string) => {
       feedback: '',
       showFeedback: false,
       attempts: 0,
-      solvedQuestions: 0
+      solvedQuestions: 0,
+      skipsRemaining: 3,
+      correctAnswersCount: 0
     });
     
     setCurrentLevel(langAwareLevels[0]);

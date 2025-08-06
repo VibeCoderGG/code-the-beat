@@ -38,6 +38,9 @@ export interface GameState {
   showFeedback: boolean;
   attempts: number;
   solvedQuestions: number; // Track total solved questions across all levels
+  // Skip limit system
+  skipsRemaining: number; // Number of skips left for current level
+  correctAnswersCount: number; // Count of correct answers to track skip reclaim
 }
 
 export interface BeatIndicator {
