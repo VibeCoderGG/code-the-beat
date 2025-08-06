@@ -31,10 +31,10 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -100, scale: 0.8 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -100, scale: 0.8 }}
-        className="fixed top-4 right-4 z-50 max-w-sm"
+        initial={{ opacity: 0, x: -100, scale: 0.8 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        exit={{ opacity: 0, x: -100, scale: 0.8 }}
+        className="fixed top-20 left-4 z-50 max-w-sm"
       >
         <div className={`bg-gradient-to-r ${rarityColor.bg} backdrop-blur-md border ${rarityColor.border} rounded-xl p-4 shadow-2xl`}>
           <div className="flex items-start justify-between">

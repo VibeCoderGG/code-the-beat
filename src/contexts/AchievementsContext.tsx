@@ -212,6 +212,8 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         
         // Add achievement points immediately when achievement is unlocked
         setAchievementPoints(prev => prev + achievement.reward.points);
+        
+        console.log(`🏆 Achievement unlocked: ${achievement.title} (+${achievement.reward.points} points)`);
       }
     }
 

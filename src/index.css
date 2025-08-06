@@ -11,6 +11,40 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Custom slider styles for BGM volume control */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-webkit-slider-track {
+  height: 4px;
+  border-radius: 2px;
+}
+
+.slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #374151;
+  border: none;
+}
+
 @layer utilities {
   .animate-blob {
     animation: blob 7s infinite;
@@ -199,4 +233,22 @@ html.light ::-webkit-scrollbar-thumb:hover {
     opacity: 0.6;
     transform: scale(1.05);
   }
+}
+
+/* BGM Controls - Force above everything */
+.bgm-controls {
+  position: relative !important;
+  z-index: 9999 !important;
+  overflow: visible !important;
+}
+
+/* BGM popup - ensure it's always on top */
+.bgm-controls > div[style*="position: absolute"] {
+  z-index: 10001 !important;
+  position: absolute !important;
+}
+
+/* Override any parent containers that might interfere */
+.bgm-controls * {
+  overflow: visible !important;
 }

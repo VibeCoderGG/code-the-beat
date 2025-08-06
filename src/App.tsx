@@ -17,7 +17,9 @@ import { DashboardModal } from './components/DashboardModal';
 import { LevelProgress } from './components/LevelProgress';
 import { OnboardingTour } from './components/OnboardingTour';
 import { MobileWarning } from './components/MobileWarning';
+import { BGMControls } from './components/BGMControlsNew';
 import { Achievement } from './types/game';
+import { bgmManager } from './utils/bgmManager';
 
 function App() {
   const [showLevelSelector, setShowLevelSelector] = useState(false);
@@ -51,6 +53,18 @@ function App() {
     if (!hasCompletedOnboarding) {
       setShowOnboarding(true);
     }
+
+    // Setup BGM with actual MP3 file
+    // Use the available MP3 file from the bgm folder
+    bgmManager.setSingleTrackForAll('back-to-you-mood-maze-main-version-04-00-993.mp3');
+    bgmManager.enableRealMusic();
+    
+    // Auto-start background music
+    setTimeout(() => {
+      bgmManager.playTrack('coding', true).catch(() => {
+        console.log('BGM auto-start failed - user interaction may be required');
+      });
+    }, 1000);
   }, []);
   
   const {
@@ -108,14 +122,14 @@ function App() {
         
         const newAchievements = checkAchievements();
         if (newAchievements.length > 0) {
-          // Only show the first new achievement that hasn't been shown
+          // Only show the first new achievement that hasn't been shown yet
           for (const achievement of newAchievements) {
             if (!shownAchievements.has(achievement.id)) {
               setNewAchievement(achievement);
               const newShownSet = new Set([...shownAchievements, achievement.id]);
               setShownAchievements(newShownSet);
               
-              // Save to localStorage
+              // Save to localStorage immediately
               localStorage.setItem('shownAchievements', JSON.stringify([...newShownSet]));
               
               // Show achievement bonus indicator
@@ -126,6 +140,8 @@ function App() {
                 setShowAchievementBonus(false);
               }, 1000);
               
+              console.log(`🎉 Showing achievement notification: ${achievement.title}`);
+              
               // Only show one achievement at a time
               break;
             }
@@ -134,6 +150,31 @@ function App() {
       }
     }
   }, [gameState.score, gameState.streak, gameState.currentLevel, gameState.currentChallenge, gameState.feedback, selectedLanguage, updatePlayerStats, updateGameScore, checkAchievements, shownAchievements, lastSolvedChallenge]);
+
+  // BGM effects for game events
+  useEffect(() => {
+    // Play achievement sound when new achievement is shown
+    if (newAchievement) {
+      bgmManager.playTrack('achievement', false).then(() => {
+        // Return to coding music after achievement sound
+        setTimeout(() => {
+          bgmManager.playTrack('coding', true);
+        }, 3000);
+      }).catch(console.warn);
+    }
+  }, [newAchievement]);
+
+  // BGM effects for level changes
+  useEffect(() => {
+    if (gameState.currentLevel > 0) {
+      // Play more intense music for higher levels
+      if (gameState.currentLevel >= 5) {
+        bgmManager.fadeToTrack('intense').catch(console.warn);
+      } else {
+        bgmManager.fadeToTrack('coding').catch(console.warn);
+      }
+    }
+  }, [gameState.currentLevel]);
 
   const handleScoreSubmitted = () => {
     setShowScoreSubmission(false);
@@ -233,6 +274,8 @@ function App() {
                   onClick={() => {
                     setShowDashboard(true);
                     markAchievementsAsSeen();
+                    // Also clear the notification state  
+                    setNewAchievement(null);
                     setShowHamburgerMenu(false);
                   }}
                   className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm relative"
@@ -284,6 +327,8 @@ function App() {
                   onClick={() => {
                     setShowDashboard(true);
                     markAchievementsAsSeen();
+                    // Also clear the notification state
+                    setNewAchievement(null);
                     setShowHamburgerMenu(false);
                   }}
                   className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-3 py-2 rounded-lg transition-all duration-200 text-sm relative"
@@ -401,6 +446,9 @@ function App() {
                 onLanguageChange={setSelectedLanguage}
                 onOpenLanguageSelector={() => setShowLanguageSelector(true)}
               />
+              
+              {/* BGM Controls */}
+              <BGMControls />
             </div>
           </div>
         </div>
@@ -452,6 +500,8 @@ function App() {
                   setShowDashboard(true);
                   // Mark all achievements as seen when dashboard is opened
                   markAchievementsAsSeen();
+                  // Also clear the notification state
+                  setNewAchievement(null);
                 }}
                 className="dashboard-button flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-purple-400 px-4 py-2 rounded-xl transition-all duration-200 relative"
               >
